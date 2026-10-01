@@ -21,8 +21,10 @@ services:
     environment:
       CAPTURE_IFACE: ${CAPTURE_IFACE:-eth1}
     volumes:
-      - ./suricata.yaml:/etc/suricata/suricata.yaml:ro
-      - ./rules:/etc/suricata/rules:ro
+      # Sin :ro — el entrypoint de la imagen necesita hacer chown de estos paths al
+      # arrancar; montados read-only, falla en loop ("Read-only file system").
+      - ./suricata.yaml:/etc/suricata/suricata.yaml
+      - ./rules:/etc/suricata/rules
       - suricata_logs:/var/log/suricata
     networks:
       net_mgmt:
