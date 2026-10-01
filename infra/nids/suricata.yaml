@@ -46,10 +46,9 @@ logging:
 
 af-packet:
   # Suricata NO interpola variables de entorno dentro de su propio YAML (a diferencia
-  # de docker-compose.yml) — hardcodeado a eth1 para que coincida con el default de
-  # CAPTURE_IFACE en docker-compose.yml/.env.example. Si cambian CAPTURE_IFACE, cambiar
-  # también acá.
-  - interface: eth1
+  # de docker-compose.yml). Dentro del contenedor la única red conectada (net_dmz)
+  # siempre aparece como "eth0" — ver nota en docker-compose.yml.
+  - interface: eth0
     threads: auto
     cluster-id: 99
     cluster-type: cluster_flow

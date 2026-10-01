@@ -1,12 +1,15 @@
 # nids/ — Suricata: IDS de red (RF-03), firmas propias en rules/local.rules (CU-01..CU-05)
 #
-# ⚠️ Pendiente (ver ../../brain/decisions.md y suricata.yaml): de dónde recibe el tráfico
-# espejado esta interfaz de captura. CAPTURE_IFACE en .env apunta hoy a un placeholder
-# (eth1) — ajustar una vez resuelto el mecanismo de mirroring (port-mirror en Proxmox, o
-# correr Suricata directamente en OPNsense vía su plugin nativo en vez de este contenedor).
+# ⚠️ Pendiente (ver ../../brain/decisions.md y suricata.yaml): de dónde recibe tráfico
+# REAL espejado esta interfaz. Por ahora escucha en su propia red net_dmz (macvlan,
+# comparte el mismo bridge físico que mail/honeypot/wazo) — ve tráfico que entra/sale de
+# ese segmento, pero no es un mirror explícito del router. Ajustar cuando se resuelva el
+# mecanismo de mirroring (port-mirror en Proxmox, o Suricata directo en OPNsense).
 #
-# La interfaz de gestión (net_mgmt, 10.10.90.30) es solo para que Wazuh/el equipo lean
-# eve.json o entren a administrar el contenedor — la captura real es otra interfaz.
+# Nota: un contenedor solo ve la interfaz de CADA red Docker a la que está conectado, y
+# Docker la nombra "eth0" adentro del contenedor (no importa cómo se llame del lado del
+# host) — por eso acá hay UNA sola red: con dos o más, Docker numera eth0/eth1/... en el
+# orden de conexión y deja de ser predecible cuál es cuál.
 
 services:
   suricata:
@@ -17,9 +20,7 @@ services:
       - NET_ADMIN
       - NET_RAW
       - SYS_NICE
-    command: ["-i", "${CAPTURE_IFACE:-eth1}", "-c", "/etc/suricata/suricata.yaml"]
-    environment:
-      CAPTURE_IFACE: ${CAPTURE_IFACE:-eth1}
+    command: ["-i", "eth0", "-c", "/etc/suricata/suricata.yaml"]
     volumes:
       # Sin :ro — el entrypoint de la imagen necesita hacer chown de estos paths al
       # arrancar; montados read-only, falla en loop ("Read-only file system").
@@ -27,11 +28,11 @@ services:
       - ./rules:/etc/suricata/rules
       - suricata_logs:/var/log/suricata
     networks:
-      net_mgmt:
-        ipv4_address: ${SURICATA_MGMT_IP:-10.10.90.30}
+      net_dmz:
+        ipv4_address: ${SURICATA_IP:-10.10.20.50}
 
 networks:
-  net_mgmt:
+  net_dmz:
     external: true
 
 volumes:
