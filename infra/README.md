@@ -95,8 +95,9 @@ y cada stack las referencia. Así se crean antes de levantar ningún stack.
 ## Cómo levantar (orden recomendado)
 
 ```bash
-# 1. Crear las redes compartidas (una sola vez)
-docker compose -f docker-compose.networks.yml up -d
+# 1. Crear las redes compartidas (una sola vez) — docker-compose.networks.yml es solo
+#    referencia, `docker compose up` no crea redes sin services; usar el script:
+chmod +x create-networks.sh && ./create-networks.sh
 
 # 2. Por stack, en orden de dependencia
 cd identity      && docker compose up -d && cd ..   # MFA primero (todo lo demás lo puede usar)

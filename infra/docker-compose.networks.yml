@@ -1,7 +1,12 @@
-# Redes compartidas entre todos los stacks. Se crean UNA sola vez, antes de levantar
-# cualquier stack, y cada docker-compose.yml de infra/*/ las referencia como `external: true`.
+# Redes compartidas entre todos los stacks. Cada docker-compose.yml de infra/*/ las
+# referencia como `external: true`.
 #
-#   docker compose -f docker-compose.networks.yml up -d
+# ⚠️ Este archivo es solo REFERENCIA/documentación de la config — `docker compose -f
+# docker-compose.networks.yml up` NO crea las redes porque no tiene ningún `service`
+# (confirmado 2026-10-01: queda "no service selected" y ninguna red se crea). Para
+# crearlas de verdad, correr:
+#
+#   ./create-networks.sh
 #
 # Confirmado 2026-10-01 contra la infraestructura real ya armada en Proxmox (opnrouter
 # VMID 124 + CTs lab-srv-datos/lab-web-dmz, ver ../brain/decisions.md):
