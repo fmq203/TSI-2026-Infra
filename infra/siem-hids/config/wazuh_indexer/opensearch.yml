@@ -1,0 +1,9 @@
+network.host: 0.0.0.0
+node.name: wazuh.indexer
+cluster.initial_master_nodes:
+  - wazuh.indexer
+cluster.name: wazuh-cluster
+discovery.type: single-node
+plugins.security.disabled: true
+path.data: /var/lib/wazuh-indexer
+path.logs: /var/log/wazuh-indexer

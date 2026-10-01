@@ -1,0 +1,121 @@
+# siem-hids/ — Wazuh: SIEM + HIDS/FIM (RF-04, RF-05, RF-10, RF-15, RF-16)
+#
+# Versión simplificada para laboratorio: el plugin de seguridad del indexer (OpenSearch)
+# va DESACTIVADO (DISABLE_SECURITY_PLUGIN / plugins.security.disabled) para evitar la
+# generación completa de certificados TLS internos del setup oficial multi-nodo de
+# Wazuh — justificable como N/A en el Excel MCU (componente interno en VLAN Gestión, no
+# expuesto a internet). Si hace falta TLS interno real para la auditoría, activar el
+# security plugin y generar certs con wazuh-certs-generator (ver docs oficiales Wazuh).
+#
+# Este es el stack más complejo de los 9 (3 contenedores, requisitos del kernel host).
+# Tratarlo como borrador a validar en caliente, no como algo ya probado end-to-end.
+#
+# ⚠️ Requiere en docker-host (y puede que no se propague, probar en el host Proxmox
+# también si falla igual):
+#   sysctl -w vm.max_map_count=262144
+# OpenSearch no arranca sin esto — falla con "max virtual memory areas vm.max_map_count
+# is too low".
+#
+# ⚠️ Los agentes Wazuh en VLAN Servidores/Usuarios (10.10.10.x/10.10.30.x) necesitan
+# llegar a wazuh.manager en VLAN Gestión (10.10.90.10) por 1514/udp y 1515/tcp — falta
+# agregar esa regla de firewall entre VLANs en OPNsense (no se puede hacer por acá).
+
+services:
+  wazuh.indexer:
+    image: wazuh/wazuh-indexer:4.9.0
+    container_name: wazuh.indexer
+    restart: unless-stopped
+    environment:
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
+      - "DISABLE_SECURITY_PLUGIN=true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - wazuh_indexer_data:/var/lib/wazuh-indexer
+      - ./config/wazuh_indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
+    networks:
+      net_mgmt:
+        ipv4_address: ${WAZUH_INDEXER_IP:-10.10.90.11}
+
+  wazuh.manager:
+    image: wazuh/wazuh-manager:4.9.0
+    container_name: wazuh.manager
+    restart: unless-stopped
+    hostname: wazuh.manager
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 655360
+        hard: 655360
+    ports:
+      - "1514:1514/udp"   # agentes
+      - "1515:1515"       # enrollment de agentes
+      - "55000:55000"     # API Wazuh
+    environment:
+      - INDEXER_URL=http://wazuh.indexer:9200
+      - INDEXER_USERNAME=admin
+      - INDEXER_PASSWORD=admin
+      - FILEBEAT_SSL_VERIFICATION_MODE=none
+      - API_USERNAME=wazuh-wui
+      - API_PASSWORD=${WAZUH_API_PASSWORD:?set in .env}
+    volumes:
+      - wazuh_api_configuration:/var/ossec/api/configuration
+      - wazuh_etc:/var/ossec/etc
+      - wazuh_logs:/var/ossec/logs
+      - wazuh_queue:/var/ossec/queue
+      - wazuh_var_multigroups:/var/ossec/var/multigroups
+      - wazuh_integrations:/var/ossec/integrations
+      - wazuh_active_response:/var/ossec/active-response/bin
+      - wazuh_agentless:/var/ossec/agentless
+      - wazuh_wodles:/var/ossec/wodles
+    depends_on:
+      - wazuh.indexer
+    networks:
+      net_mgmt:
+        ipv4_address: ${WAZUH_MANAGER_IP:-10.10.90.10}
+
+  wazuh.dashboard:
+    image: wazuh/wazuh-dashboard:4.9.0
+    container_name: wazuh.dashboard
+    restart: unless-stopped
+    ports:
+      - "443:5601"
+    environment:
+      - INDEXER_USERNAME=admin
+      - INDEXER_PASSWORD=admin
+      - WAZUH_API_URL=https://wazuh.manager
+      - API_USERNAME=wazuh-wui
+      - API_PASSWORD=${WAZUH_API_PASSWORD:?set in .env}
+      - OPENSEARCH_HOSTS=http://wazuh.indexer:9200
+      - SERVER_SSL_ENABLED=false
+    volumes:
+      - ./config/wazuh_dashboard/opensearch_dashboards.yml:/usr/share/wazuh-dashboard/config/opensearch_dashboards.yml:ro
+    depends_on:
+      - wazuh.indexer
+      - wazuh.manager
+    networks:
+      net_mgmt:
+        ipv4_address: ${WAZUH_DASHBOARD_IP:-10.10.90.12}
+
+networks:
+  net_mgmt:
+    external: true
+
+volumes:
+  wazuh_indexer_data:
+  wazuh_api_configuration:
+  wazuh_etc:
+  wazuh_logs:
+  wazuh_queue:
+  wazuh_var_multigroups:
+  wazuh_integrations:
+  wazuh_active_response:
+  wazuh_agentless:
+  wazuh_wodles:
