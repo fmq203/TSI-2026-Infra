@@ -1,0 +1,74 @@
+%YAML 1.1
+---
+# Config mínima funcional para esta tarea (no es el suricata.yaml de referencia completo
+# de OISF, que trae ~1000 líneas). Cubre lo que RF-03 necesita: HOME_NET real de las 4
+# VLANs, captura por af-packet de la interfaz que reciba el espejo de tráfico, reglas
+# propias (rules/local.rules, ver CU-01..CU-05) y salida EVE JSON para que Wazuh la lea.
+#
+# ⚠️ Pendiente de decidir (ver ../../brain/decisions.md): cómo llega el tráfico espejado
+# a esta interfaz. Opciones: (a) port-mirror a nivel de bridge en Proxmox hacia una NIC
+# dedicada de docker-host, o (b) instalar el plugin nativo os-suricata en OPNsense en vez
+# de este contenedor — evita todo el problema de mirroring porque el router ya ve el
+# tráfico relevante (recomendado dado el atraso, pero es una decisión de arquitectura
+# pendiente, no la tomo acá). Estas reglas (local.rules) sirven para cualquiera de las dos.
+
+vars:
+  address-groups:
+    HOME_NET: "[10.10.10.0/24,10.10.20.0/24,10.10.30.0/24,10.10.90.0/24]"
+    EXTERNAL_NET: "!$HOME_NET"
+  port-groups:
+    HTTP_PORTS: "[80,443,8081]"
+    SSH_PORTS: "[22,2022,2222]"
+
+default-log-dir: /var/log/suricata/
+
+outputs:
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      types:
+        - alert
+        - dns
+        - tls
+        - http
+        - ssh
+        - flow
+
+logging:
+  default-log-level: notice
+  outputs:
+    - console:
+        enabled: yes
+    - file:
+        enabled: yes
+        filename: suricata.log
+
+af-packet:
+  - interface: ${CAPTURE_IFACE}
+    threads: auto
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+
+default-rule-path: /etc/suricata/rules
+rule-files:
+  - local.rules
+
+classification-file: /etc/suricata/classification.config
+reference-config-file: /etc/suricata/reference.config
+
+detect-engine:
+  - profile: medium
+  - sgh-mpm-context: auto
+
+app-layer:
+  protocols:
+    tls:
+      enabled: yes
+    http:
+      enabled: yes
+    ssh:
+      enabled: yes
+    dns:
+      enabled: yes

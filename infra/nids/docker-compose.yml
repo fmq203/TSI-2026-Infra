@@ -1,0 +1,36 @@
+# nids/ — Suricata: IDS de red (RF-03), firmas propias en rules/local.rules (CU-01..CU-05)
+#
+# ⚠️ Pendiente (ver ../../brain/decisions.md y suricata.yaml): de dónde recibe el tráfico
+# espejado esta interfaz de captura. CAPTURE_IFACE en .env apunta hoy a un placeholder
+# (eth1) — ajustar una vez resuelto el mecanismo de mirroring (port-mirror en Proxmox, o
+# correr Suricata directamente en OPNsense vía su plugin nativo en vez de este contenedor).
+#
+# La interfaz de gestión (net_mgmt, 10.10.90.30) es solo para que Wazuh/el equipo lean
+# eve.json o entren a administrar el contenedor — la captura real es otra interfaz.
+
+services:
+  suricata:
+    image: jasonish/suricata:latest
+    container_name: suricata
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_NICE
+    command: ["-i", "${CAPTURE_IFACE:-eth1}", "-c", "/etc/suricata/suricata.yaml"]
+    environment:
+      CAPTURE_IFACE: ${CAPTURE_IFACE:-eth1}
+    volumes:
+      - ./suricata.yaml:/etc/suricata/suricata.yaml:ro
+      - ./rules:/etc/suricata/rules:ro
+      - suricata_logs:/var/log/suricata
+    networks:
+      net_mgmt:
+        ipv4_address: ${SURICATA_MGMT_IP:-10.10.90.30}
+
+networks:
+  net_mgmt:
+    external: true
+
+volumes:
+  suricata_logs:

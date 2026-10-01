@@ -1,0 +1,23 @@
+# Reglas propias — CU-01 Reconocimiento/escaneo de puertos contra la DMZ
+# (RF-03 firmas propias, RF-17 simulación documentada, RT-01 Red Team)
+#
+# SIDs >= 1000000 (rango reservado para reglas locales, no pisa SIDs de rulesets
+# públicos como Emerging Threats si más adelante se agregan). $HOME_NET se define en
+# suricata.yaml con las 4 VLANs internas.
+
+# 1) Escaneo "ruidoso" tipo nmap -sS/-sT: muchos intentos de conexión (SYN) desde el
+#    mismo origen en poco tiempo, sin importar a qué puerto.
+alert tcp any any -> $HOME_NET any (msg:"CU-01 Posible escaneo de puertos TCP (muchos SYN por origen)"; flow:to_server; flags:S; threshold:type threshold, track by_src, count 20, seconds 10; classtype:attempted-recon; sid:1000001; rev:1; priority:2;)
+
+# 2) Escaneo NULL (nmap -sN): paquete TCP sin ningún flag — no ocurre en tráfico legítimo.
+alert tcp any any -> $HOME_NET any (msg:"CU-01 Escaneo NULL detectado (nmap -sN)"; flow:to_server; flags:0; classtype:attempted-recon; sid:1000002; rev:1; priority:1;)
+
+# 3) Escaneo FIN (nmap -sF): solo el flag FIN activo, técnica de evasión de firewalls simples.
+alert tcp any any -> $HOME_NET any (msg:"CU-01 Escaneo FIN detectado (nmap -sF)"; flow:to_server; flags:F; classtype:attempted-recon; sid:1000003; rev:1; priority:1;)
+
+# 4) Escaneo XMAS (nmap -sX): flags FIN+PSH+URG activos simultáneamente.
+alert tcp any any -> $HOME_NET any (msg:"CU-01 Escaneo XMAS detectado (nmap -sX)"; flow:to_server; flags:FPU; classtype:attempted-recon; sid:1000004; rev:1; priority:1;)
+
+# 5) Barrido de ping (host discovery): muchos ICMP echo-request desde el mismo origen,
+#    típico de `nmap -sn` o `fping` antes de un escaneo de puertos dirigido.
+alert icmp any any -> $HOME_NET any (msg:"CU-01 Posible barrido de ping (ICMP echo-request masivo)"; itype:8; threshold:type threshold, track by_src, count 10, seconds 5; classtype:attempted-recon; sid:1000005; rev:1; priority:2;)

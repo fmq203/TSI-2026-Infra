@@ -1,0 +1,65 @@
+# targets/ — Los activos a proteger: app web vulnerable + DB + host SSH cliente.
+# Estos son los servidores/clientes que la consigna propia describe como "activos críticos"
+# (RF-01). Llevan agente Wazuh para reportar al HIDS/FIM (RF-04) y son el objetivo de
+# los ataques simulados RT-02 (fuerza bruta SSH) y RT-03 (webshell) del Red Team.
+#
+# ⚠️ Reemplazar DVWA por la app real que defina la consigna propia si el escenario lo pide
+# (ej. un e-commerce simulado, portal de trámites, etc.) — DVWA es el placeholder mínimo
+# que ya trae vulnerabilidades web conocidas (útil para RT-03 webshell/inyección).
+
+services:
+  app-db:
+    image: mysql:8.0
+    container_name: target-app-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set in .env}
+      MYSQL_DATABASE: dvwa
+    volumes:
+      - target_db_data:/var/lib/mysql
+    networks:
+      - net_srv
+
+  webapp:
+    image: vulnerables/web-dvwa:latest
+    container_name: target-webapp
+    restart: unless-stopped
+    depends_on:
+      - app-db
+    environment:
+      MYSQL_HOSTNAME: app-db
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set in .env}
+    ports:
+      - "8081:80"
+    networks:
+      net_srv:
+        ipv4_address: ${WEBAPP_IP:-10.10.10.10}
+
+  ssh-client:
+    image: linuxserver/openssh-server:latest
+    container_name: target-ssh-client
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - PASSWORD_ACCESS=true
+      - USER_NAME=${SSH_TEST_USER:-labuser}
+      - USER_PASSWORD=${SSH_TEST_PASSWORD:?set in .env}   # intencionalmente débil para RT-02, documentar en informe
+    ports:
+      - "2022:2222"
+    networks:
+      net_usr:
+        ipv4_address: ${SSH_CLIENT_IP:-10.10.30.10}
+
+  # wazuh-agent: se instala DENTRO de webapp/ssh-client via sidecar o directamente en la
+  # imagen (mejor opción: extender el Dockerfile de cada target agregando el paquete
+  # wazuh-agent y apuntándolo a siem-hids). Ver docs/07-monitoreo-logs.md cuando se escriba.
+
+networks:
+  net_srv:
+    external: true
+  net_usr:
+    external: true
+
+volumes:
+  target_db_data:

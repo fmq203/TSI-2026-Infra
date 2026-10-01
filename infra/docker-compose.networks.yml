@@ -1,0 +1,57 @@
+# Redes compartidas entre todos los stacks. Se crean UNA sola vez, antes de levantar
+# cualquier stack, y cada docker-compose.yml de infra/*/ las referencia como `external: true`.
+#
+#   docker compose -f docker-compose.networks.yml up -d
+#
+# Confirmado 2026-10-01 contra la infraestructura real ya armada en Proxmox (opnrouter
+# VMID 124 + CTs lab-srv-datos/lab-web-dmz, ver ../brain/decisions.md):
+# - Gateway real de cada VLAN es .254 (lo sirve opnrouter), no .1.
+# - VLAN 10 = Servidores (no DMZ) y VLAN 20 = DMZ (no Servidores) — al revés de lo que
+#   decía una versión anterior de este archivo.
+# - docker-host (a crear) tendrá 4 NICs, una por VLAN, cada una ya en el bridge correcto
+#   (vmbr11/vmbr12/vmbr1/vmbr13) — no hace falta trunking 802.1Q dentro del host, cada
+#   `parent: ethN` de abajo es una interfaz dedicada a UNA sola VLAN.
+# - IPs de Docker (macvlan) reservadas: .254 router, .5 el propio docker-host, .10/.20/.30/.40
+#   contenedores. Evitar .10 en net_dmz (ya lo usa `lab-web-dmz`, CT 211) y .20 en net_srv
+#   (ya lo usa `lab-srv-datos`, CT 210) — son hosts reales en la misma VLAN, no Docker.
+
+networks:
+  net_srv:
+    name: net_srv
+    driver: macvlan
+    driver_opts:
+      parent: eth1          # NIC de docker-host en vmbr11 — VLAN 10, Servidores
+    ipam:
+      config:
+        - subnet: 10.10.10.0/24
+          gateway: 10.10.10.254
+
+  net_dmz:
+    name: net_dmz
+    driver: macvlan
+    driver_opts:
+      parent: eth2          # NIC de docker-host en vmbr12 — VLAN 20, DMZ
+    ipam:
+      config:
+        - subnet: 10.10.20.0/24
+          gateway: 10.10.20.254
+
+  net_usr:
+    name: net_usr
+    driver: macvlan
+    driver_opts:
+      parent: eth3          # NIC de docker-host en vmbr1 (ya existe, libre) — VLAN 30, Usuarios
+    ipam:
+      config:
+        - subnet: 10.10.30.0/24
+          gateway: 10.10.30.254
+
+  net_mgmt:
+    name: net_mgmt
+    driver: macvlan
+    driver_opts:
+      parent: eth4          # NIC de docker-host en vmbr13 (A CREAR) — VLAN 90, Gestión
+    ipam:
+      config:
+        - subnet: 10.10.90.0/24
+          gateway: 10.10.90.254

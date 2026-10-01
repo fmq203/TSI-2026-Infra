@@ -1,0 +1,50 @@
+# identity/ — Keycloak: autenticación administrativa con MFA (RF-12, RNF-04)
+# TOTP y WebAuthn/U2F vienen nativos en Keycloak (Authentication > Required Actions).
+# "Windows Hello" se declara N.A. justificado en el Excel MCU si no hay endpoints Windows
+# con TPM en el laboratorio (WebAuthn ya cubre la clase de autenticador FIDO2).
+#
+# Algoritmo de hash de credenciales: Keycloak permite elegir el "Password Hashing Provider"
+# (Argon2 vía el proveedor `argon2` si está habilitado, o pbkdf2-sha512 por defecto).
+# Configurar en: Realm Settings > Security Defenses / Authentication > Policies.
+
+services:
+  identity-db:
+    image: postgres:16-alpine
+    container_name: identity-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?set in .env}
+    volumes:
+      - identity_db_data:/var/lib/postgresql/data
+    networks:
+      - net_mgmt
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: keycloak
+    restart: unless-stopped
+    command: start --hostname=${KEYCLOAK_HOSTNAME:-auth.lab.local} --proxy-headers=xforwarded
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://identity-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?set in .env}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?set in .env}
+      KC_HTTP_ENABLED: "true"   # TLS termina en el router/reverse-proxy; ver RNF-04
+    ports:
+      - "8443:8443"
+      - "8080:8080"
+    depends_on:
+      - identity-db
+    networks:
+      - net_mgmt
+
+networks:
+  net_mgmt:
+    external: true
+
+volumes:
+  identity_db_data:
