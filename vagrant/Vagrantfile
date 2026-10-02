@@ -1,0 +1,56 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+#
+# Reproducción PORTABLE de la infra para que el Red Team la ataque en su propia máquina
+# (VirtualBox), sin depender del Proxmox compartido del Blue Team. Mismas 4 VLANs/IPs
+# que la infra real — ver ../infra/README.md y ../brain/decisions.md.
+#
+# Diferencia deliberada: el router acá es una VM Linux con nftables, NO OPNsense/pfSense
+# — OPNsense no tiene box de Vagrant oficial (FreeBSD, instalación por ISO) y no vale la
+# pena automatizarlo para esto. Se comporta igual (NAT + segmentación + firewall por
+# VLAN) pero no es el mismo producto que usa el Blue Team en Proxmox. Ver vagrant/README.md.
+#
+# Uso: `vagrant up` desde esta carpeta. Primera vez tarda ~10-15 min (descarga de
+# imágenes Docker). Requiere VirtualBox + Vagrant instalados y ~12 GB de RAM libres.
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "debian/bookworm64"
+  config.vm.boot_timeout = 600
+
+  # --- router: NAT + nftables, sustituye a opnrouter para esta reproducción ---
+  config.vm.define "router" do |router|
+    router.vm.hostname = "router"
+    # "Internet simulada": red interna compartida donde el Red Team suma SU PROPIA VM
+    # atacante (Kali u otra) desde la UI de VirtualBox (Settings > Network > Internal
+    # Network > vlan_wan), con una IP en 203.0.113.0/24 (rango reservado para
+    # documentación/ejemplos, RFC 5737 — no es internet real ni colisiona con nada).
+    router.vm.network "private_network", virtualbox__intnet: "vlan_wan",  ip: "203.0.113.254", netmask: "255.255.255.0"
+    router.vm.network "private_network", virtualbox__intnet: "vlan_srv",  ip: "10.10.10.254", netmask: "255.255.255.0"
+    router.vm.network "private_network", virtualbox__intnet: "vlan_dmz",  ip: "10.10.20.254", netmask: "255.255.255.0"
+    router.vm.network "private_network", virtualbox__intnet: "vlan_usr",  ip: "10.10.30.254", netmask: "255.255.255.0"
+    router.vm.network "private_network", virtualbox__intnet: "vlan_mgmt", ip: "10.10.90.254", netmask: "255.255.255.0"
+    router.vm.provision "shell", path: "provision-router.sh"
+    router.vm.provider "virtualbox" do |vb|
+      vb.name = "tarea3-router"
+      vb.memory = 1024
+      vb.cpus = 1
+    end
+  end
+
+  # --- docker-host: todos los stacks, 1 NIC por VLAN (mismas IPs que en Proxmox) ---
+  config.vm.define "docker-host" do |dh|
+    dh.vm.hostname = "docker-host"
+    dh.vm.network "private_network", virtualbox__intnet: "vlan_srv",  ip: "10.10.10.5", netmask: "255.255.255.0"
+    dh.vm.network "private_network", virtualbox__intnet: "vlan_dmz",  ip: "10.10.20.5", netmask: "255.255.255.0"
+    dh.vm.network "private_network", virtualbox__intnet: "vlan_usr",  ip: "10.10.30.5", netmask: "255.255.255.0"
+    dh.vm.network "private_network", virtualbox__intnet: "vlan_mgmt", ip: "10.10.90.5", netmask: "255.255.255.0"
+    # Comparte el repo completo (un nivel arriba de vagrant/) dentro de la VM.
+    dh.vm.synced_folder "..", "/opt/TSI-2026-Infra"
+    dh.vm.provision "shell", path: "provision-docker-host.sh"
+    dh.vm.provider "virtualbox" do |vb|
+      vb.name = "tarea3-docker-host"
+      vb.memory = 10240
+      vb.cpus = 2
+    end
+  end
+end

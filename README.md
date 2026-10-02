@@ -9,6 +9,7 @@ re-derivarlo cada vez.
 - **`LETRA.md`** — La letra completa de la tarea: marco teórico, glosario, requerimientos funcionales/no funcionales, arquitectura sugerida, Partes Blue Team y Red Team, matriz de documentación, hitos, KPIs y criterios de evaluación. Fuente original, no se edita.
 - **`docs/`** — Carpeta de trabajo del equipo para la documentación de la solución (ver `docs/README.md` para el checklist de entregables).
 - **`infra/`** — Despliegue Docker-first de la infraestructura de defensa (ver `infra/README.md` para arquitectura, stacks y cómo levantarla).
+- **`vagrant/`** — Reproducción portable de la misma infra en VirtualBox (ver `vagrant/README.md`), para que el Red Team la ataque en su propia máquina sin depender del Proxmox compartido.
 - **`brain/`** — Base de conocimiento específica de esta tarea: decisiones de arquitectura, hechos estables y lecciones aprendidas que no viven en la letra ni en las plantillas. Ver "Brain de la Tarea 3" abajo.
 
 ## Brain de la Tarea 3

@@ -62,3 +62,17 @@ referencia la anterior.
   nids+targets+honeypot) y subirlo (`update_container_resources`, sin recrear) recién
   cuando se agreguen `mail`/`wazo`/`alerting`.
   **Fuente:** cálculo sobre `get_nodes`/`get_vms`/`get_containers` (MCP Proxmox), 2026-10-01.
+
+- **2026-10-02** — Se arma una **reproducción portable en VirtualBox/Vagrant**
+  (`vagrant/`) de la misma infra, para que el Red Team la ataque en su propia máquina en
+  vez de competir por el Proxmox compartido del Blue Team (tiene sentido: cada equipo
+  Blue Team arma su propia consigna, lo natural es que el Red Team correspondiente
+  ataque una copia propia). El router de esa reproducción es una **VM Linux con
+  nftables**, no OPNsense — OPNsense no tiene box de Vagrant oficial (FreeBSD, instalación
+  por ISO) y automatizarlo no valía el esfuerzo dado el tiempo disponible.
+  **Alternativas descartadas:** automatizar OPNsense igual (vía ISO + autoinstall,
+  mucho más trabajo para un componente que el Red Team no audita, solo ataca lo que hay
+  detrás). **Riesgo aceptado:** si algún hallazgo del Red Team depende específicamente
+  de una particularidad de OPNsense, no se va a reproducir en esta copia — queda
+  anotado en `vagrant/README.md`.
+  **Fuente:** conversación 2026-10-02.
