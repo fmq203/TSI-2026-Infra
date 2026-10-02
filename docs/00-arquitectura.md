@@ -8,7 +8,7 @@
 >
 > Actualizado 2026-10-02: la vista física ya no es un esquema teórico — refleja la
 > infraestructura realmente desplegada y corriendo (`opnrouter` VMID 124, `docker-host`
-> CT 108 con 9 de 9 contenedores planeados arriba). Ver `../brain/decisions.md` y
+> CT 108 con 6 de 9 stacks / 11 contenedores arriba). Ver `../brain/decisions.md` y
 > `../brain/MEMORY.md` para el detalle de cada paso.
 
 | Campo | Valor |
@@ -143,7 +143,7 @@ Los 5 casos de uso de `40-consigna-propia.md` §3, mapeados a vistas:
 
 - [x] ~~Crear bridge `vmbr13`, agregar NICs, crear `docker-host`~~ — hecho 2026-10-02.
 - [x] ~~Desplegar identity, mail, honeypot, targets, nids, siem-hids~~ — hecho 2026-10-02,
-  9/9 contenedores corriendo.
+  6 stacks / 11 contenedores corriendo (IPs reales en `../brain/MEMORY.md`).
 - [ ] Instalar agente Wazuh en `targets` (webapp/ssh-client) para HIDS/FIM real (RF-04).
 - [ ] Regla de firewall en OPNsense: VLAN Servidores/Usuarios → VLAN Gestión, puertos
   1514/1515 (si no, el agente Wazuh nunca va a poder conectar al manager).

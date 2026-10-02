@@ -28,20 +28,19 @@ for pair in "Servidores:$IF_SRV" "DMZ:$IF_DMZ" "Usuarios:$IF_USR" "Gestión:$IF_
   fi
 done
 
-docker network create -d macvlan \
-  --subnet=10.10.10.0/24 --gateway=10.10.10.254 \
-  -o parent="$IF_SRV" net_srv
+create_net() {
+  name="$1"; subnet="$2"; gw="$3"; parent="$4"
+  if docker network inspect "$name" >/dev/null 2>&1; then
+    echo "$name ya existe, no se toca"
+  else
+    docker network create -d macvlan --subnet="$subnet" --gateway="$gw" \
+      -o parent="$parent" "$name"
+  fi
+}
 
-docker network create -d macvlan \
-  --subnet=10.10.20.0/24 --gateway=10.10.20.254 \
-  -o parent="$IF_DMZ" net_dmz
-
-docker network create -d macvlan \
-  --subnet=10.10.30.0/24 --gateway=10.10.30.254 \
-  -o parent="$IF_USR" net_usr
-
-docker network create -d macvlan \
-  --subnet=10.10.90.0/24 --gateway=10.10.90.254 \
-  -o parent="$IF_MGMT" net_mgmt
+create_net net_srv  10.10.10.0/24 10.10.10.254 "$IF_SRV"
+create_net net_dmz  10.10.20.0/24 10.10.20.254 "$IF_DMZ"
+create_net net_usr  10.10.30.0/24 10.10.30.254 "$IF_USR"
+create_net net_mgmt 10.10.90.0/24 10.10.90.254 "$IF_MGMT"
 
 docker network ls | grep net_

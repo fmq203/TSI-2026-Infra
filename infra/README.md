@@ -8,9 +8,10 @@ fuera de Docker porque su naturaleza lo exige (ver abajo).
 
 > ✅ **Actualizado 2026-10-02: esto ya no es un esqueleto con placeholders — es la
 > infraestructura real, desplegada y corriendo.** IPs/VLANs son las reales de
-> `opnrouter` (VM 124) y `docker-host` (CT 108). 9 de 9 contenedores planeados están
-> arriba (falta `wazo`/`alerting`, no construidos todavía, no bloquean el freeze del
-> 07/10). Ver `../brain/MEMORY.md` para el detalle y estado de cada pieza.
+> `opnrouter` (VM 124) y `docker-host` (CT 108). **6 de 9 stacks arriba (11
+> contenedores)**: identity, siem-hids, nids, mail, honeypot, targets. Sin construir
+> (no existen sus carpetas todavía): `wazo`, `alerting`, `soar-thehive-optional`. Ver
+> `../brain/MEMORY.md` para IPs reales de cada contenedor y estado de cada pieza.
 
 ## Arquitectura: 1 VM (router) + 1 LXC (docker-host) + todo el resto en contenedores
 
@@ -146,15 +147,14 @@ De acá en adelante, seguir "Cómo levantar" más abajo.
 | `honeypot/` | Cowrie (SSH/Telnet honeypot) | RF-09 | ~0.25 GB |
 | `mail/` | docker-mailserver (Postfix+Dovecot) | RF-07 (canal email) | ~0.5 GB |
 | `identity/` | Keycloak (TOTP + WebAuthn nativos) | RF-12 | ~1 GB |
-| `wazo/` | Wazo PBX | RF-08 | ~1.5-2 GB |
-| `targets/` | App vulnerable + DB + host SSH víctima (con agente Wazuh) | activos a proteger; RT-02/RT-03 | ~1 GB |
-| `alerting/` | Relay de webhook (2º canal: Telegram/Discord) | RF-07 (2º canal) | ~0.1 GB |
-| `soar-thehive-optional/` | TheHive + Cortex + Cassandra + ES | opcional, RF-11 enriquecido | ~3-4 GB (apagado por defecto) |
+| `wazo/` | Wazo PBX | RF-08 | ~1.5-2 GB — ❌ **no construido** (carpeta no existe) |
+| `targets/` | App vulnerable + DB + host SSH víctima (agente Wazuh **pendiente**) | activos a proteger; RT-02/RT-03 | ~1 GB |
+| `alerting/` | Relay de webhook (2º canal: Telegram/Discord) | RF-07 (2º canal) | ~0.1 GB — ❌ **no construido** |
+| `soar-thehive-optional/` | TheHive + Cortex + Cassandra + ES | opcional, RF-11 enriquecido | ~3-4 GB — ❌ **no construido**, y no hace falta |
 
 **SOAR (RF-06, 3 playbooks) se resuelve con Wazuh Active Response**, nativo del stack
 `siem-hids/` — sin contenedor adicional. Evita cargar Cassandra+Elasticsearch de TheHive
-solo para eso. `soar-thehive-optional/` queda documentado pero apagado; se enciende
-solo si sobra RAM en el host.
+solo para eso. `soar-thehive-optional/` solo se construiría si sobra tiempo y RAM.
 
 Presupuesto total contenedores: **~8-9 GB** de RAM. `docker-host` quedó con límite de
 **9 GB** (subido de los 6 GB iniciales cuando se agregó Wazuh), dentro del margen real
@@ -182,6 +182,19 @@ y cada stack las referencia. Así se crean antes de levantar ningún stack.
 
 ## Cómo levantar (orden recomendado — ya ejecutado 2026-10-02, referencia para rearmar)
 
+**Camino corto** (dentro de `docker-host`, desde esta carpeta `infra/`):
+
+```bash
+make up       # redes + prerequisitos + los 6 stacks, en orden. Se puede re-correr.
+make status   # docker ps resumido
+make logs     # últimas líneas de cada stack
+```
+
+Los contenedores tienen `restart: unless-stopped`: si se reinicia `docker-host`, vuelven
+solos (verificado 2026-10-02), no hace falta re-correr nada.
+
+**Camino manual** (lo mismo que hace `make up`, paso a paso):
+
 ```bash
 # 1. Crear las redes compartidas (una sola vez) — docker-compose.networks.yml es solo
 #    referencia, `docker compose up` no crea redes sin services; usar el script:
@@ -198,20 +211,22 @@ sysctl -w vm.max_map_count=262144
 #    el siguiente comando se ejecuta en el directorio equivocado (nos pasó varias veces).
 INFRA=/opt/TSI-2026-Infra/infra   # ajustar a donde hayan clonado el repo
 
+for s in identity siem-hids nids mail honeypot targets; do
+  [ -f "$INFRA/$s/.env.example" ] && [ ! -f "$INFRA/$s/.env" ] && cp "$INFRA/$s/.env.example" "$INFRA/$s/.env"
+done
+
 cd "$INFRA/identity"   && docker compose up -d   # MFA primero (todo lo demás lo puede usar)
 cd "$INFRA/siem-hids"  && docker compose up -d   # Wazuh: manager+indexer+dashboard
 cd "$INFRA/nids"       && docker compose up -d   # Suricata
 cd "$INFRA/mail"       && docker compose up -d
 cd "$INFRA/honeypot"   && docker compose up -d
-cd "$INFRA/wazo"       && docker compose up -d   # no construido todavía
 cd "$INFRA/targets"    && docker compose up -d
-cd "$INFRA/alerting"   && docker compose up -d   # no construido todavía
-
-# Opcional, solo si sobra RAM:
-cd "$INFRA/soar-thehive-optional" && docker compose up -d
+# wazo / alerting / soar-thehive-optional: no construidos todavía
 ```
 
-O usar el `Makefile` de este directorio: `make up` / `make down` / `make status`.
+> Wazuh tarda 30-60 s en levantar del todo: los "connection refused" del manager o del
+> dashboard hacia el indexer en el primer minuto son normales. Mirar de nuevo antes de
+> tocar nada.
 
 ## Qué falta para que esto sea "real" (no solo esqueleto)
 
@@ -219,19 +234,25 @@ O usar el `Makefile` de este directorio: `make up` / `make down` / `make status`
    docente (`docs/40-consigna-propia.md`). IPs/VLANs reales ya reemplazaron los
    placeholders en todos los `.env`.
 2. ~~Desplegar identity, siem-hids, nids, mail, honeypot, targets~~ — hecho 2026-10-02,
-   9/9 contenedores corriendo. Reglas de Suricata escritas para CU-01
+   6 stacks / 11 contenedores corriendo. Reglas de Suricata escritas para CU-01
    (`nids/rules/local.rules`). Faltan los decoders/reglas de Wazuh para CU-02..CU-05.
 3. **Agente Wazuh en `targets`** (HIDS/FIM real, RF-04) — no instalado todavía. Hace
    falta además una regla de firewall en OPNsense: VLAN Servidores/Usuarios → VLAN
    Gestión, puertos 1514/1515 (si no, el agente nunca llega al manager).
-4. **Playbooks de Active Response** (scripts) para los 3 casos de RF-06.
-5. ⚠️ **Pendiente de decidir:** cómo llega tráfico real espejado a Suricata — hoy corre
+4. **Logs de Suricata y Cowrie → Wazuh**: hoy `nids` escribe `eve.json` en el volumen
+   `suricata_logs` y `honeypot` en `cowrie_logs`, y nadie los lee. Hace falta montarlos
+   en `wazuh.manager` (o un agente/forwarder) y declararlos como `<localfile>` en
+   `ossec.conf`. Sin esto no hay correlación (RF-05) ni se ve el CU-01 en el dashboard.
+5. **MFA dentro de Keycloak** (TOTP/WebAuthn, RF-12): el contenedor corre pero no hay
+   realm/usuarios/MFA configurados todavía.
+6. **Playbooks de Active Response** (scripts) para los 3 casos de RF-06.
+7. ⚠️ **Pendiente de decidir:** cómo llega tráfico real espejado a Suricata — hoy corre
    en la VLAN DMZ y ve tráfico local de ese segmento vía macvlan, no un mirror explícito
    del router. Opciones: port-mirror a nivel de bridge en Proxmox, o correr Suricata
    directo en OPNsense vía su plugin nativo `os-suricata` (más simple, evita todo el
    problema de mirroring). Las reglas de `local.rules` sirven para cualquiera de las
    dos. Ver `../brain/decisions.md`.
-6. `wazo` y `alerting` sin construir — no bloquean el freeze del 07/10.
+8. `wazo` y `alerting` sin construir — no bloquean el freeze del 07/10.
 
 ## Verificación de que el aprovisionamiento del entorno es correcto
 

@@ -1,10 +1,34 @@
 ---
 title: Plan de recuperación por atraso (H1/H2 vencidos)
 tags: [tarea3, plan, atraso, hitos]
-updated: 2026-10-01
+updated: 2026-10-02
 ---
 
 # Plan de recuperación — atraso en H1/H2
+
+## Estado al 02/10/2026 (fin del día 2)
+
+| Ítem del plan | Estado |
+|---|---|
+| Consigna propia + diagrama (`docs/40`, `docs/00`) | 🔶 borradores escritos y actualizados contra la infra real — **falta revisarlos entre los dos y aprobación docente** |
+| Router + 4 VLANs | ✅ `opnrouter` con las 4 VLANs |
+| `docker-host` + Docker | ✅ CT 108 privilegiado |
+| Keycloak (identity) | ✅ corriendo — **falta configurar MFA (TOTP/WebAuthn) adentro** |
+| Suricata (nids) | ✅ corriendo con reglas CU-01 — mirror de tráfico sin decidir |
+| Wazuh (siem-hids) | ✅ manager + indexer + dashboard |
+| Agente Wazuh en `targets` | ❌ pendiente (+ regla de firewall en OPNsense) |
+| Ataque 1 (recon) documentado | ❌ pendiente |
+| Playbook Active Response + ataque 2 (SSH) | ❌ pendiente |
+| Ataque 3 (webshell) | ❌ pendiente |
+| `alerting` (2º canal) | ❌ no construido |
+| Docs ISACA (02, 03, 04, 06, 07, 09...) y Excel MCU | ❌ pendientes |
+| Bitácora | ❌ sin empezar — ver "Regla no negociable" abajo |
+
+Extra no planificado que se hizo: reproducción portable para el Red Team en
+`vagrant/` (escrita, **sin probar todavía** en una máquina física).
+
+En resumen: la infra está adelantada respecto al plan, **la documentación está atrasada**.
+Lo que más pesa del 07/10 en adelante es docs + bitácora + los 3 ataques documentados.
 
 ## Contexto (conversación 01/10/2026)
 

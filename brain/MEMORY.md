@@ -1,159 +1,108 @@
 ---
-title: Hechos estables — Tarea 3
-tags: [tarea3, memoria, arquitectura, fechas]
-updated: 2026-10-01
+title: Hechos estables — Tarea 3 (foto del estado actual)
+tags: [tarea3, memoria, arquitectura, fechas, estado]
+updated: 2026-10-02
 ---
 
 # Hechos estables — Tarea 3
 
+> Este archivo es la **foto del estado actual**, no un historial. El "por qué" de cada
+> cosa y cómo se llegó acá está en [[decisions]] (cronológico) y los errores ya pisados
+> en [[LEARNINGS]]. Si algo de acá contradice al código o a Proxmox, manda lo real —
+> actualizar este archivo.
+
 ## Marco general
 
 - Curso: Seguridad de la Información (Tecnólogo). Tarea 3 = práctica integradora
-  Blue Team / Red Team sobre una infraestructura de red de defensa real.
-  (LETRA.md:1-9)
-- Dos equipos: **Blue Team** (construye y rinde auditoría) y **Red Team** (ataca e
-  informa). (LETRA.md:5, §0.3)
-- Perfil de cumplimiento exigido: **MCU 5.0 (AGESIC), perfil comunitario AVANZADO**,
-  en las 6 funciones (Gobernar, Identificar, Proteger, Detectar, Responder, Recuperar).
-  (LETRA.md §0.1)
-- 17 requerimientos funcionales (RF-01 a RF-17) y 10 no funcionales (RNF-01 a RNF-10).
-  (LETRA.md §3-4)
-- Se exige generar una **consigna propia** (escenario empresarial ficticio + diagrama
-  de red + ≥5 casos de uso) antes de avanzar — RF-01. (LETRA.md §6.1, README.md)
+  Blue Team / Red Team sobre una infraestructura de red de defensa real. (LETRA.md)
+- Equipo Blue Team: **2 personas**. Perfil exigido: **MCU 5.0 (AGESIC), perfil
+  AVANZADO**, 6 funciones. 17 RF + 10 RNF. (LETRA.md §0.1, §3-4)
+- Escenario de la consigna propia: **FinSegura S.A.**, fintech ficticia, 5 casos de uso
+  CU-01..CU-05 (`docs/40-consigna-propia.md`, borrador sin aprobación docente aún).
 
-## Fechas duras del curso
+## Fechas duras
 
 | Hito | Fecha |
 |---|---|
-| Pre-entrega Blue Team (congelar, `git tag v1.0`) | miércoles 07/10/2026 |
-| Auditoría formal Blue Team (defensa MCU 5.0) | miércoles 14/10/2026 |
-| Pre-entrega Red Team (informe preliminar ≥70%) | miércoles 28/10/2026 |
+| Pre-entrega Blue Team (congelar con `git tag v1.0`) | **miércoles 07/10/2026** |
+| Auditoría formal Blue Team (defensa MCU 5.0 + demo detección→respuesta) | miércoles 14/10/2026 |
+| Pre-entrega Red Team | miércoles 28/10/2026 |
 | Entrega final Red Team | lunes 09/11/2026 |
 
-(README.md tabla; LETRA.md §0.3)
+Los hitos internos H1 (21/09) y H2 (28/09) se vencieron sin avance; desde el 01/10 se
+sigue [[plan-recuperacion-atraso]].
 
-### Hitos internos sugeridos por la letra (§6.3 — no confirmado si el equipo los sigue tal cual)
+## Dónde vive todo
 
-| Hito | Fecha | Ítem |
-|---|---|---|
-| H1 | lunes 21/09/2026 | Consigna propia + diagrama aprobados |
-| H2 | lunes 28/09/2026 | FW + segmentación + NIDS + HIDS operativos |
-| H3 | viernes 02/10/2026 | SIEM + SOAR + Wazo + honeypots + dashboards |
-| H4 | miércoles 07/10/2026 | Pre-entrega congelada, 3 ataques simulados documentados |
-| H5 | miércoles 14/10/2026 | Auditoría formal |
+- **Repo de esta tarea:** <https://github.com/fmq203/TSI-2026-Infra> (público). Raíz =
+  esta carpeta. El repo del curso (`FQ-TSI-2026`) NO contiene esta tarea.
+- **Proxmox:** nodo `proxmox01` (`192.168.0.102:8006`), 6 cores / 23.28 GB, compartido
+  con VMs/CTs que **no son de esta tarea** (no tocarlos).
+- **De esta tarea en Proxmox:**
 
-## Arquitectura decidida (infra/README.md)
+| ID | Nombre | Tipo | Rol |
+|---|---|---|---|
+| 124 | `opnrouter` | VM, OPNsense 26.1.2 | Router/firewall, gateway `.254` de las 4 VLANs, NAT |
+| 108 | `docker-host` | LXC **privilegiado**, Debian 13, 2c/9GB | Corre todos los stacks Docker. Repo clonado en `/opt/TSI-2026-Infra` |
+| 210 | `lab-srv-datos` | LXC Debian | Resto de un intento anterior, `10.10.10.20`. Sin decidir si se borra |
+| 211 | `lab-web-dmz` | LXC Debian | Resto de un intento anterior, `10.10.20.10`. Sin decidir si se borra |
+| 109 | `vbox-test-host` | VM, apagada | Prueba fallida de VirtualBox anidado (ver [[LEARNINGS]]). Se puede borrar |
+| 120 | `kali` | VM | **No es de esta tarea**, pero está en la VLAN Servidores (`vmbr11`) — sirve para llegar a las consolas |
 
-- **Solo 2 piezas fuera de Docker:** VM `router-fw` (OPNsense o similar, VLAN trunking
-  802.1Q real + puerto SPAN/mirror + NAT) y VM `docker-host` (Debian/Ubuntu + Docker
-  Engine, una NIC por VLAN). Todo lo demás corre en `docker compose`. Ver también
-  [[decisions]] por el motivo completo.
-- 9 stacks Docker planeados: `siem-hids` (Wazuh), `nids` (Suricata), `honeypot` (Cowrie),
-  `mail` (docker-mailserver), `identity` (Keycloak MFA), `wazo` (PBX), `targets`
-  (app+db+ssh víctima), `alerting` (webhook 2º canal), `soar-thehive-optional` (TheHive,
-  apagado por defecto). (infra/README.md)
-- **RF-06 (SOAR, 3 playbooks)** se resuelve con **Wazuh Active Response**, no con
-  TheHive+Cortex — ver [[decisions]].
-- Redes Docker (placeholders hasta que H1 defina IPs/VLANs reales): `net_dmz` (VLAN 10,
-  DMZ), `net_srv` (VLAN 20, servidores), `net_usr` (VLAN 30, usuarios), `net_mgmt`
-  (VLAN 90, gestión). (infra/README.md)
-- Presupuesto de RAM de los contenedores: ~8-9 GB.
-- Host real: Proxmox `proxmox01`, 6 cores / 23.28 GB RAM, ~11.6 GB ya usados por VMs de
-  **otras materias** (`kali`, `unifios`, `opnrouter`, `forti`, etc. — no tocar). Las VMs
-  de esta tarea son nuevas. (infra/README.md)
+## Red (confirmada contra Proxmox y OPNsense real)
 
-## Estado de avance observado (verificado 2026-10-01)
+| VLAN | Rol | Subred | Gateway | Bridge Proxmox | Interfaz OPNsense |
+|---|---|---|---|---|---|
+| — | WAN | `192.168.0.0/24` (DHCP) | — | `vmbr0` | WAN `vtnet0` |
+| 10 | Servidores | `10.10.10.0/24` | `.254` | `vmbr11` | LAN `vtnet1` |
+| 20 | DMZ | `10.10.20.0/24` | `.254` | `vmbr12` | OPT1 `vtnet2` |
+| 30 | Usuarios | `10.10.30.0/24` | `.254` | `vmbr1` | OPT2 `vtnet3` |
+| 90 | Gestión | `10.10.90.0/24` | `.254` | `vmbr13` | OPT3 `vtnet4` |
 
-- `infra/`: tienen `docker-compose.yml` escrito → `identity/`, `mail/`, `targets/`,
-  `honeypot/` (los 4 con `.env.example`). **Vacíos** (solo la carpeta, sin contenido):
-  `nids/`, `router-vm/`, `siem-hids/`, `wazo/`, `alerting/`, `soar-thehive-optional/`,
-  `infra/docs/`.
-- `docs/`: `40-consigna-propia.md` y `00-arquitectura.md` tienen **borrador** (escenario
-  "FinSegura S.A.", fintech ficticia; 5 casos de uso CU-01..CU-05; vista física con IPs
-  reales tomadas de los `.env.example`/compose ya existentes) — falta revisión del
-  equipo y aprobación docente. El resto de la matriz sigue en `☐` en `docs/README.md`.
-  `docs/evidencias/` está vacía.
-- Git: repo local con 6 commits por encima de `origin/main` sin pushear (`git status`,
-  2026-10-01).
+Ojo: **10 = Servidores, 20 = DMZ** (al revés de lo que asumía una versión vieja).
+`docker-host` tiene `.5` en cada VLAN (`eth0`..`eth3` en ese orden).
 
-## Atraso confirmado (conversación 01/10/2026)
+## Contenedores corriendo en `docker-host` (verificado 2026-10-02)
 
-- H1 (21/09) y H2 (28/09) de la letra vencieron sin avance: atraso real, no un
-  cronograma interno distinto. Equipo de **2 personas**. Consigna propia: escenario
-  decidido, diagrama técnico y casos de uso todavía sin cerrar a esta fecha.
-- Plan de recuperación acordado (día a día hasta el freeze del 07/10): ver
-  [[plan-recuperacion-atraso]].
+| Stack | Contenedor | IP | Cómo se asignó |
+|---|---|---|---|
+| identity | `keycloak` | `10.10.90.1` | dinámica (IPAM Docker) |
+| identity | `identity-db` | `10.10.90.2` | dinámica |
+| siem-hids | `wazuh.manager` / `.indexer` / `.dashboard` | `10.10.90.10` / `.11` / `.12` | fija |
+| nids | `suricata` | `10.10.20.50` | fija |
+| mail | `mailserver` | `10.10.20.20` | fija |
+| honeypot | `cowrie` | `10.10.20.30` | fija |
+| targets | `target-webapp` (DVWA) | `10.10.10.10` | fija |
+| targets | `target-app-db` | `10.10.10.1` | dinámica |
+| targets | `target-ssh-client` | `10.10.30.10` | fija |
 
-## Infraestructura real en Proxmox (confirmado 2026-10-01)
+6 de 9 stacks arriba (11 contenedores). **No construidos:** `wazo`, `alerting`.
+`soar-thehive-optional` apagado a propósito (RF-06 se cubre con Wazuh Active Response).
 
-- Nodo `proxmox01`: 6 cores / 23.28 GB RAM, ~11.8 GB libres al momento de revisar.
-- Ya existe, de un intento anterior del equipo (no estaba en el repo): VM `opnrouter`
-  (124, OPNsense real) + CT `lab-srv-datos` (210) + CT `lab-web-dmz` (211).
-- Mapeo de VLANs confirmado (ver [[decisions]] para el detalle completo): VLAN10=
-  Servidores (10.10.10.0/24), VLAN20=DMZ (10.10.20.0/24), VLAN30=Usuarios
-  (10.10.30.0/24, bridge `vmbr1` ya existe libre), VLAN90=Gestión (10.10.90.0/24,
-  bridge `vmbr13` **todavía no existe**, es el único paso manual pendiente).
-- IPs reservadas por hosts reales (no usar para contenedores Docker): `10.10.10.20`
-  (lab-srv-datos), `10.10.20.10` (lab-web-dmz), `.254` en cada VLAN (gateway de
-  opnrouter).
+⚠️ Riesgo latente: el IPAM de Docker no sabe que `.5` es de `docker-host` — si se agregan
+contenedores sin IP fija en `net_mgmt`/`net_srv`, alguno puede caer en `.5` y chocar.
+Dar IP fija a todo contenedor nuevo.
 
-## Provisioning ejecutado (2026-10-01)
+## Credenciales (dónde están — NUNCA en el repo)
 
-- `docker-host` creado: **CT 108**, Debian 13, LXC **no privilegiado** (el token del
-  conector MCP no puede crear privilegiados, ver [[LEARNINGS]]), nesting=1, 2 cores,
-  6 GB RAM, 40 GB disco en `nvme`. NICs: net0=vmbr11/Servidores `.5`,
-  net1=vmbr12/DMZ `.5`, net2=vmbr1/Usuarios `.5`. **Falta net3 (Gestión, vmbr13)**.
-- `opnrouter` (124): subido a 2 cores/2 GB (pendiente de que se reinicie la VM para
-  tomar efecto). NICs agregadas: net3=vmbr1/Usuarios. **Falta NIC de Gestión (vmbr13)**.
-- **Resuelto:** se creó `vmbr13` (VLAN Gestión) y se agregaron las 4 NICs en ambos
-  (`opnrouter` net1-4, `docker-host` net0-3) vía la API REST de Proxmox directamente con
-  `curl` + el token root de `Seguridad/Tarea/.env` (el conector MCP no exponía ni crear
-  bridges ni agregar NICs — ver [[LEARNINGS]]). En esta versión de Proxmox (9.2) **ningún
-  rol predefinido entre `PVEAdmin`/`PVESysAdmin` y `Administrator` incluye `Sys.Modify`**
-  — hubo que terminar asignándole `Administrator` al token para poder crear la bridge.
-  El `ifreload -a` del alta de `vmbr13` devolvió exit code 1 pero la bridge quedó activa
-  y el nodo sano (mismo uptime, sin caídas) — igual que `vmbr11`/`vmbr12`, `vmbr13` no
-  aparece en el listado `/nodes/.../network` (parser de esta versión no las reconoce del
-  todo, pero funcionan).
-- **Completo (2026-10-01):** `opnrouter` reiniciado (2 cores/2GB activos), y el equipo
-  asignó `10.10.30.254/24` (Usuarios) y `10.10.90.254/24` (Gestión) a las 2 interfaces
-  nuevas dentro de OPNsense. Las 4 VLANs están arriba en `opnrouter` y `docker-host`.
-- **Completo (2026-10-01): infra desplegada y corriendo.** `docker-host` tuvo que
-  **recrearse como privilegiado** — `docker-mailserver` necesita escribir un sysctl
-  (`kernel.domainname`) que un LXC no privilegiado deniega, y `unprivileged` resultó ser
-  una opción **read-only** en Proxmox (no se puede cambiar en caliente ni en frío sin
-  recrear). Recrear como privilegiado tampoco se pudo por API con ningún token —
-  Proxmox bloquea esa operación específica para *cualquier* token, incluso `root@pam`
-  con rol Administrator; exige sesión real (ticket), por eso se hizo con `pct create`
-  en la shell del host. CT 108 recreado privilegiado, mismas 4 IPs, con Docker + todos
-  los stacks desplegados vía `/opt/TSI-2026-Infra` (ver repo nuevo abajo).
-  Contenedores corriendo: `identity-db`, `keycloak`, `mailserver`, `cowrie`,
-  `target-app-db`, `target-webapp`, `target-ssh-client`, `suricata`.
-- **Repo nuevo:** el código de esta tarea se migró a su propio repo, público,
-  [github.com/fmq203/TSI-2026-Infra](https://github.com/fmq203/TSI-2026-Infra) — nunca
-  había estado trackeado en el repo del curso (`FQ-TSI-2026`), así que no hizo falta
-  ninguna operación destructiva ahí. `docker-host` clona este repo directo en `/opt`.
-  Bug propio corregido en el camino: `docker-compose.networks.yml` tenía el mapeo
-  `parent: ethN` corrido (y `docker compose up` igual no crea redes sin `services` —
-  las redes se crean con `infra/create-networks.sh`, no con ese yaml).
-- **Confirmado estable (2026-10-01):** los 8 contenedores corriendo sanos —
-  `identity-db`, `keycloak`, `mailserver` (healthy), `cowrie`, `target-app-db`,
-  `target-webapp`, `target-ssh-client`, `suricata` (engine arrancado, 6 threads).
-  Bugs propios corregidos en el camino (ver [[LEARNINGS]]): `nids` solo puede tener
-  **una** red Docker conectada (un contenedor ve cada red propia como `eth0`, sin
-  importar el nombre del lado del host — `eth1` no existía dentro del contenedor, de
-  ahí el "No such device"); `docker-mailserver` con `SSL_TYPE=self-signed` no genera el
-  certificado solo, hace falta `infra/mail/generate-self-signed-cert.sh`.
-- **`siem-hids` (Wazuh) completo y estable (2026-10-02):** manager + indexer +
-  dashboard corriendo, dashboard sirviendo en `:5601` sobre `10.10.90.12`, creando
-  índices de monitoreo en ciclo normal. `docker-host` subido a 9 GB de límite (de 10.7
-  GB libres en el host Proxmox) para que entre cómodo. Bugs propios en el camino (ver
-  [[LEARNINGS]]): `cluster.initial_master_nodes` no es compatible con
-  `discovery.type: single-node`; `wazuh.api.timeout` no es una clave válida en el
-  dashboard 4.9.0.
-- Falta: instalar agente Wazuh en `targets` (HIDS/FIM, RF-04), regla de firewall en
-  OPNsense para que los agentes de VLAN Servidores/Usuarios lleguen al manager en VLAN
-  Gestión (1514/1515), el primer playbook de Active Response (RF-06), `wazo`,
-  `alerting`, y resolver cómo llega tráfico real espejado a Suricata (hoy escucha en su
-  propia red net_dmz vía macvlan — ve tráfico local de ese segmento, pero no es un
-  mirror explícito del router).
+- Tokens/keys que usó Claude están **solo en la máquina del integrante que los creó**
+  (`Seguridad/Tarea/.env`, fuera del repo): token Proxmox `root@pam!claude-fq-tsi`,
+  API key de OPNsense, key SSH `claude-code-tarea3`. **No se comparten**: el compañero
+  debe crear los suyos si los necesita.
+- Contraseñas de los servicios: las de cada `infra/*/.env.example` (valores de
+  laboratorio tipo `changeme`) — son las que están **en uso hoy**. Cambiarlas antes de
+  la auditoría.
+- `config.xml` de OPNsense (backup real, trae hashes de contraseña): NO está en el repo,
+  se pide al integrante que lo tiene.
+
+## Pendientes (ver también `README.md` → "Para retomar")
+
+- Infra: agente Wazuh en `targets` + regla OPNsense Servidores/Usuarios→Gestión
+  1514/1515; **llevar los logs de Suricata (`eve.json`) y Cowrie a Wazuh** — hoy cada uno
+  escribe en su volumen y Wazuh no los ve, sin esto no hay correlación (RF-05) ni se ve
+  el CU-01 en el dashboard; MFA configurado dentro de Keycloak; playbooks de Active
+  Response (RF-06, 3 casos); decidir mirror de tráfico para Suricata; `wazo` y
+  `alerting`.
+- Docs: toda la matriz ISACA salvo `00-arquitectura` y `40-consigna-propia` (borradores);
+  Excel MCU; bitácora.
+- Seguridad / limpieza: ver `README.md` → "Pendientes de seguridad".

@@ -1,6 +1,8 @@
 # honeypot/ — Cowrie: honeypot SSH/Telnet (RF-09)
 # Detecta reconocimiento/fuerza bruta contra un servicio "trampa" en la DMZ.
-# Logs en JSON -> se reenvían al SIEM (siem-hids) via filebeat/rsyslog (ver logging/).
+# Logs en JSON en el volumen cowrie_logs. PENDIENTE: reenviarlos al SIEM (Wazuh) — todavía
+# no hay nada configurado para eso, hoy Wazuh no ve la actividad del honeypot.
+# Nota: con red macvlan, `ports:` no hace nada — se llega directo a 10.10.20.30:2222/2223.
 
 services:
   cowrie:

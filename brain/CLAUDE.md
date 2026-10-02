@@ -8,34 +8,36 @@ estado de avance de esta tarea — no reemplaza los entregables formales (`docs/
 Excel de `plantilla/mcu5/`), sino que guarda el *por qué* detrás de ellos para no
 re-derivarlo cada sesión.
 
-Este brain es independiente del brain general del curso (`../../../brain/`, es decir
-`Seguridad/brain/`). Vive dentro de la carpeta de la tarea porque el volumen de detalle
-(17 RF, 10 RNF, 6 hitos, 9 stacks Docker, auditoría MCU 5.0 Avanzado) lo justifica. El
-brain general solo debe tener un resumen corto que apunte acá — no duplicar el detalle.
+Este brain es autocontenido dentro del repo `TSI-2026-Infra` (uno de los integrantes
+además tiene un brain general del curso en su máquina, fuera de este repo — no hace falta
+para trabajar acá).
 
 **Principio central:** un tema = un archivo. Nombres en kebab-case descriptivo.
 
 ## Mapa de directorios
 
 ```
-tarea3-infra-red-segura/
-├── README.md        ← punto de entrada humano + del brain (leer primero)
-├── LETRA.md          ← fuente original, INTOCABLE desde el brain
+TSI-2026-Infra/
+├── CLAUDE.md        ← orientación corta para IA (se carga sola en Claude Code)
+├── README.md        ← punto de entrada humano: estado, accesos, pendientes de seguridad
+├── LETRA.md          ← fuente original, INTOCABLE
 ├── brain/
-│   ├── CLAUDE.md      ← este archivo: mapa y reglas
-│   ├── MEMORY.md       ← hechos estables (fechas, equipo, RF/RNF, arquitectura decidida)
-│   ├── decisions.md     ← log de decisiones de arquitectura/alcance, con fecha y motivo
-│   ├── LEARNINGS.md     ← lecciones aprendidas (qué funcionó, qué no, por qué)
-│   └── notes/            ← un archivo por tema puntual, se crea bajo demanda
+│   ├── CLAUDE.md      ← este archivo: reglas para mantener el brain
+│   ├── MEMORY.md       ← FOTO del estado actual (se reescribe cuando cambia algo)
+│   ├── decisions.md     ← log cronológico de decisiones, con fecha y motivo (append-only)
+│   ├── LEARNINGS.md     ← errores ya pisados y su causa (append-only)
+│   └── notes/            ← un archivo por tema puntual (ej. plan-recuperacion-atraso.md)
 ├── docs/                ← entregables formales (plantillas ISACA + MCU completadas)
-└── infra/                ← despliegue Docker-first (ver infra/README.md)
+├── infra/                ← despliegue Docker-first (ver infra/README.md)
+└── vagrant/              ← copia portable en VirtualBox para el Red Team
 ```
 
-- **Fuentes originales** (`LETRA.md`, plantillas en `../plantilla/`) NO se duplican acá —
-  se referencian con ruta relativa o cita de sección (ej. "LETRA.md §6.3").
+- **Fuentes originales** (`LETRA.md`; plantillas ISACA/MCU del curso, que **no están en
+  este repo**) NO se duplican acá — se referencian por nombre o sección (ej. "LETRA.md §6.3").
 - `docs/` e `infra/` son entregables/código real, no brain — el brain los referencia pero
   no los reescribe.
-- `MEMORY.md` y `decisions.md` son principalmente append-only (se agrega, rara vez se borra).
+- `MEMORY.md` = estado actual, se **reescribe** para que nunca contradiga a la realidad.
+  `decisions.md` y `LEARNINGS.md` = historia, solo se **agrega** al final.
 
 ## Protocolo de lectura
 
@@ -75,9 +77,7 @@ updated: YYYY-MM-DD
 
 ## Nota sobre auto-carga
 
-Este `CLAUDE.md` vive en `brain/`, no en la raíz de la tarea, así que **no se carga
-automáticamente** al abrir Claude Code en `tarea3-infra-red-segura/`. El archivo que sí
-se lee naturalmente al abrir la carpeta es `../README.md` — por eso el README fue
-actualizado para funcionar como base/puerta de entrada del brain y resumir lo esencial.
-Para reglas completas, pedir explícitamente "leé brain/CLAUDE.md" o referenciarlo con
-`@brain/CLAUDE.md`.
+El `CLAUDE.md` de la **raíz** se carga solo al abrir Claude Code en el repo y manda a
+leer `README.md` y `brain/MEMORY.md`. Este archivo (`brain/CLAUDE.md`) se carga cuando se
+trabaja con archivos de `brain/`. Con otra IA (ChatGPT, Gemini, Copilot, etc.): pasarle
+primero el `CLAUDE.md` de la raíz, el `README.md` y `brain/MEMORY.md`.
