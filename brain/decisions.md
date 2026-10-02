@@ -91,6 +91,29 @@ referencia la anterior.
   **Fuente:** conversación 2026-10-02, archivo en
   `/tmp/.../scratchpad/opnsense-config.xml` (local, no en git).
 
+- **2026-10-02** — Se armó una VM de prueba en Proxmox (**VMID 109**, `vbox-test-host`,
+  4 cores/12GB/80GB, `cpu=host` para virtualización anidada) para validar el
+  `Vagrantfile` de `vagrant/` sin depender de una laptop externa. Se apagaron
+  `opnrouter` y `docker-host` temporalmente para liberar RAM (vuelven a prenderse al
+  terminar esta prueba). Adentro: Debian 13 + VirtualBox 7.2.20 (repo oficial de
+  Oracle, sí soporta `trixie`) + Vagrant 2.4.9 (repo de HashiCorp, también soporta
+  `trixie`). `vboxdrv` activo, flag `vmx` presente — la virtualización anidada
+  funciona. Repo clonado en `/opt/TSI-2026-Infra` dentro de esta VM de prueba (no
+  confundir con el `docker-host` real).
+  **Fuente:** conversación 2026-10-02.
+
+- **2026-10-02** — Se intentó validar `vagrant up` (VirtualBox) anidado dentro de una
+  VM de Proxmox (VMID 109, `vbox-test-host`) para no depender de una laptop externa.
+  **Descartado tras 5 intentos de fix** (ver [[LEARNINGS]]) — es un límite real de
+  triple anidamiento en este hardware, no algo configurable. `opnrouter` y
+  `docker-host` se apagaron ~1h20 para esta prueba y se restauraron al cortarla; los
+  11 contenedores de `docker-host` volvieron solos por `restart: unless-stopped`, sin
+  intervención manual. La VM 109 queda creada y apagada en Proxmox por si alguien
+  quiere retomar la investigación sin apuro — no es necesaria para nada del freeze del
+  07/10. La validación real de `vagrant up` sigue pendiente, a hacer en una máquina
+  física (no anidada) — que es además el escenario real del Red Team.
+  **Fuente:** conversación 2026-10-02.
+
 - **2026-10-02** — Se le dio a Claude acceso **SSH directo al host Proxmox** (key
   dedicada `claude_proxmox`, no la de uso personal) para ejecutar `pct exec`/`qm`
   directo en `docker-host` sin pedirle al usuario que relaye cada comando. Terminó

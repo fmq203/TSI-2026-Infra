@@ -49,6 +49,15 @@ Append-only: qué funcionó, qué no, y por qué.
   no existe dentro de un contenedor conectado a una sola red; ahí siempre es `eth0`).
   Si un servicio necesita capturar/bindear a una interfaz específica (como Suricata),
   conectarlo a UNA sola red Docker para que el nombre interno sea predecible.
+- **Triple anidamiento de virtualización (Proxmox/KVM → VM → VirtualBox → su guest) no
+  funciona en este hardware** — probado con `cpu=host`, `cpu=host,flags=+nested-virt`
+  (expone `ept`/`unrestricted_guest` en `/proc/cpuinfo`), `paravirtprovider=minimal`,
+  `nestedpaging=off`, `vtxvpid=off`, y chipset `q35` — **los 5 intentos cuelgan en el
+  mismo punto exacto** del boot del guest de VirtualBox ("Loading initial ramdisk..."),
+  sin ningún error/excepción en `VBox.log`. No vale la pena seguir insistiendo con
+  ajustes de configuración — si hace falta probar `vagrant up`/VirtualBox de verdad,
+  usar una máquina física (ahí no hay triple anidamiento, que es justo el escenario real
+  del Red Team de todas formas).
 - **`docker-mailserver` con `SSL_TYPE=self-signed` no genera el certificado solo** —
   espera encontrarlo ya puesto en el volumen montado en `/tmp/docker-mailserver/ssl/`
   con nombres exactos (`<hostname>-cert.pem`, `<hostname>-key.pem`,
