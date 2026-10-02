@@ -8,15 +8,20 @@ updated: 2026-10-02
 
 ## Estado al 02/10/2026 (fin del día 2)
 
+"✅" = construido y probado en el despliegue de referencia de uno de los integrantes. En
+VirtualBox se reproduce todo con `vagrant up` (ver `vagrant/README.md`), que todavía no
+se probó de punta a punta en una máquina física.
+
 | Ítem del plan | Estado |
 |---|---|
-| Consigna propia + diagrama (`docs/40`, `docs/00`) | 🔶 borradores escritos y actualizados contra la infra real — **falta revisarlos entre los dos y aprobación docente** |
-| Router + 4 VLANs | ✅ `opnrouter` con las 4 VLANs |
-| `docker-host` + Docker | ✅ CT 108 privilegiado |
-| Keycloak (identity) | ✅ corriendo — **falta configurar MFA (TOTP/WebAuthn) adentro** |
-| Suricata (nids) | ✅ corriendo con reglas CU-01 — mirror de tráfico sin decidir |
+| Consigna propia + diagrama (`docs/40`, `docs/00`) | 🔶 borradores escritos — **falta revisarlos entre los dos y aprobación docente** |
+| Router + 4 VLANs | ✅ (en VirtualBox: router nftables automático, u OPNsense manual) |
+| `docker-host` + Docker | ✅ |
+| Keycloak (identity) | ✅ contenedor — **falta configurar MFA (TOTP/WebAuthn) adentro** |
+| Suricata (nids) | ✅ con reglas CU-01 — mirror de tráfico sin decidir |
 | Wazuh (siem-hids) | ✅ manager + indexer + dashboard |
-| Agente Wazuh en `targets` | ❌ pendiente (+ regla de firewall en OPNsense) |
+| Logs de Suricata/Cowrie → Wazuh | ❌ pendiente (sin esto el ataque 1 no se ve en el SIEM) |
+| Agente Wazuh en `targets` | ❌ pendiente (+ regla en el router si es OPNsense) |
 | Ataque 1 (recon) documentado | ❌ pendiente |
 | Playbook Active Response + ataque 2 (SSH) | ❌ pendiente |
 | Ataque 3 (webshell) | ❌ pendiente |
@@ -24,8 +29,9 @@ updated: 2026-10-02
 | Docs ISACA (02, 03, 04, 06, 07, 09...) y Excel MCU | ❌ pendientes |
 | Bitácora | ❌ sin empezar — ver "Regla no negociable" abajo |
 
-Extra no planificado que se hizo: reproducción portable para el Red Team en
-`vagrant/` (escrita, **sin probar todavía** en una máquina física).
+Extra no planificado que se hizo: despliegue desde cero en VirtualBox en `vagrant/`
+(sirve para el compañero y para el Red Team; escrito, **sin probar todavía** en una
+máquina física).
 
 En resumen: la infra está adelantada respecto al plan, **la documentación está atrasada**.
 Lo que más pesa del 07/10 en adelante es docs + bitácora + los 3 ataques documentados.

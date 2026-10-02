@@ -4,7 +4,7 @@
 # REAL espejado esta interfaz. Por ahora escucha en su propia red net_dmz (macvlan,
 # comparte el mismo bridge físico que mail/honeypot/wazo) — ve tráfico que entra/sale de
 # ese segmento, pero no es un mirror explícito del router. Ajustar cuando se resuelva el
-# mecanismo de mirroring (port-mirror en Proxmox, o Suricata directo en OPNsense).
+# mecanismo de mirroring (espejo en el hipervisor, o Suricata directo en OPNsense).
 #
 # Nota: un contenedor solo ve la interfaz de CADA red Docker a la que está conectado, y
 # Docker la nombra "eth0" adentro del contenedor (no importa cómo se llame del lado del

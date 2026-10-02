@@ -8,27 +8,20 @@
 #
 #   ./create-networks.sh
 #
-# Confirmado 2026-10-01 contra la infraestructura real ya armada en Proxmox (opnrouter
-# VMID 124 + CTs lab-srv-datos/lab-web-dmz, ver ../brain/decisions.md):
-# - Gateway real de cada VLAN es .254 (lo sirve opnrouter), no .1.
-# - VLAN 10 = Servidores (no DMZ) y VLAN 20 = DMZ (no Servidores) — al revés de lo que
-#   decía una versión anterior de este archivo.
-# - docker-host (ya creado, CT 108) tiene 4 NICs, una por VLAN, cada una ya en el bridge
-#   correcto (vmbr11/vmbr12/vmbr1/vmbr13) — no hace falta trunking 802.1Q dentro del host,
-#   cada `parent: ethN` de abajo es una interfaz dedicada a UNA sola VLAN.
-#   Mapeo real confirmado (net0..net3 del CT 108): eth0=Servidores, eth1=DMZ,
-#   eth2=Usuarios, eth3=Gestión. (Antes decía eth1/eth2/eth3/eth4 — eth4 ni existe,
-#   por eso fallaba net_mgmt. Corregido 2026-10-01.)
-# - IPs de Docker (macvlan) reservadas: .254 router, .5 el propio docker-host, .10/.20/.30/.40
-#   contenedores. Evitar .10 en net_dmz (ya lo usa `lab-web-dmz`, CT 211) y .20 en net_srv
-#   (ya lo usa `lab-srv-datos`, CT 210) — son hosts reales en la misma VLAN, no Docker.
+# - Gateway de cada VLAN: .254 (el router).
+# - VLAN 10 = Servidores, VLAN 20 = DMZ (no al revés).
+# - docker-host tiene 4 NICs, una por VLAN, con IP .5 en cada una. Cada `parent:` de abajo
+#   es una interfaz dedicada a UNA sola VLAN (sin trunking 802.1Q dentro del host). Los
+#   nombres eth0..eth3 son de ejemplo: create-networks.sh detecta la NIC real por su IP.
+# - Reservadas: .254 router, .5 docker-host. Todo contenedor lleva IP fija (ver
+#   ../brain/MEMORY.md), porque el IPAM de Docker no sabe de esas dos y podría asignarlas.
 
 networks:
   net_srv:
     name: net_srv
     driver: macvlan
     driver_opts:
-      parent: eth0          # NIC de docker-host en vmbr11 — VLAN 10, Servidores
+      parent: eth0          # NIC de docker-host en la VLAN 10, Servidores
     ipam:
       config:
         - subnet: 10.10.10.0/24
@@ -38,7 +31,7 @@ networks:
     name: net_dmz
     driver: macvlan
     driver_opts:
-      parent: eth1          # NIC de docker-host en vmbr12 — VLAN 20, DMZ
+      parent: eth1          # NIC de docker-host en la VLAN 20, DMZ
     ipam:
       config:
         - subnet: 10.10.20.0/24
@@ -48,7 +41,7 @@ networks:
     name: net_usr
     driver: macvlan
     driver_opts:
-      parent: eth2          # NIC de docker-host en vmbr1 (ya existe, libre) — VLAN 30, Usuarios
+      parent: eth2          # NIC de docker-host en la VLAN 30, Usuarios
     ipam:
       config:
         - subnet: 10.10.30.0/24
@@ -58,7 +51,7 @@ networks:
     name: net_mgmt
     driver: macvlan
     driver_opts:
-      parent: eth3          # NIC de docker-host en vmbr13 — VLAN 90, Gestión
+      parent: eth3          # NIC de docker-host en la VLAN 90, Gestión
     ipam:
       config:
         - subnet: 10.10.90.0/24

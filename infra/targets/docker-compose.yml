@@ -18,7 +18,8 @@ services:
     volumes:
       - target_db_data:/var/lib/mysql
     networks:
-      - net_srv
+      net_srv:
+        ipv4_address: ${APP_DB_IP:-10.10.10.11}
 
   webapp:
     image: vulnerables/web-dvwa:latest

@@ -19,7 +19,8 @@ services:
     volumes:
       - identity_db_data:/var/lib/postgresql/data
     networks:
-      - net_mgmt
+      net_mgmt:
+        ipv4_address: ${IDENTITY_DB_IP:-10.10.90.21}
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
@@ -34,13 +35,13 @@ services:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?set in .env}
       KC_HTTP_ENABLED: "true"   # TLS termina en el router/reverse-proxy; ver RNF-04
-    ports:
-      - "8443:8443"
-      - "8080:8080"
     depends_on:
       - identity-db
     networks:
-      - net_mgmt
+      # IP fija: sin ella el IPAM de Docker asigna la primera libre (.1, .2...) y podría
+      # chocar con la .5 del propio docker-host, que Docker no conoce.
+      net_mgmt:
+        ipv4_address: ${KEYCLOAK_IP:-10.10.90.20}
 
 networks:
   net_mgmt:

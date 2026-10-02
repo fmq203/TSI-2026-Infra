@@ -1,0 +1,9 @@
+# Scripts y configs que se ejecutan dentro de Linux: siempre LF, aunque se clone en
+# Windows con core.autocrlf=true (con CRLF, bash falla con "bad interpreter: ^M").
+*.sh        text eol=lf
+Vagrantfile text eol=lf
+Makefile    text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.rules     text eol=lf
+*.env.example text eol=lf

@@ -50,9 +50,8 @@ además de MCU 5.0, ver LETRA.md §1.5).
 
 ## 2. Red diseñada (resumen — detalle técnico en `00-arquitectura.md`)
 
-4 dominios de seguridad, ya reflejados en `infra/docker-compose.networks.yml` y en la red
-real ya armada en Proxmox (`opnrouter` + `lab-srv-datos`/`lab-web-dmz`, ver
-`00-arquitectura.md` §1.1):
+4 dominios de seguridad, implementados como redes Docker (`infra/create-networks.sh`) y
+redes aisladas del hipervisor (ver `00-arquitectura.md` §1.1):
 
 | Dominio | VLAN | Subred | Qué vive ahí |
 |---|---|---|---|
@@ -65,7 +64,7 @@ Flujos permitidos (resumen, detallar en el diagrama físico):
 - Internet → DMZ: solo puertos de los servicios publicados (SMTP/submission, SIP/RTP de
   Wazo, el puerto trampa del honeypot).
 - DMZ → Servidores: nada directo salvo lo estrictamente necesario (ninguno por defecto).
-- Usuarios → Servidores: solo HTTPS a la app de préstamos.
+- Usuarios → Servidores: solo HTTP/HTTPS a la app de préstamos.
 - Cualquier VLAN → Gestión: bloqueado salvo admins autenticados con MFA (RF-12), y
   agentes Wazuh (1514/1515) desde Servidores/Usuarios hacia el manager.
 - El NIDS (Suricata) corre en la DMZ y hoy ve tráfico local de ese segmento vía macvlan,

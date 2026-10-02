@@ -7,18 +7,18 @@
 # expuesto a internet). Si hace falta TLS interno real para la auditoría, activar el
 # security plugin y generar certs con wazuh-certs-generator (ver docs oficiales Wazuh).
 #
-# Este es el stack más complejo de los 9 (3 contenedores, requisitos del kernel host).
-# Tratarlo como borrador a validar en caliente, no como algo ya probado end-to-end.
+# Probado y funcionando (manager + indexer + dashboard). Tarda 30-60 s en levantar: los
+# "connection refused" hacia el indexer en el primer minuto son normales.
 #
-# ⚠️ Requiere en docker-host (y puede que no se propague, probar en el host Proxmox
-# también si falla igual):
+# ⚠️ Requiere en docker-host (`make up` lo aplica; si docker-host es un LXC, el valor es
+# del kernel del hipervisor y puede haber que setearlo ahí):
 #   sysctl -w vm.max_map_count=262144
 # OpenSearch no arranca sin esto — falla con "max virtual memory areas vm.max_map_count
 # is too low".
 #
 # ⚠️ Los agentes Wazuh en VLAN Servidores/Usuarios (10.10.10.x/10.10.30.x) necesitan
-# llegar a wazuh.manager en VLAN Gestión (10.10.90.10) por 1514/udp y 1515/tcp — falta
-# agregar esa regla de firewall entre VLANs en OPNsense (no se puede hacer por acá).
+# llegar a wazuh.manager en VLAN Gestión (10.10.90.10) por 1514 y 1515 TCP — el router
+# tiene que permitirlo (nftables de vagrant/ ya lo hace; en OPNsense crear la regla).
 
 services:
   wazuh.indexer:

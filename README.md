@@ -1,137 +1,116 @@
 # Tarea 3 — Infraestructura de Red de Defensa Completa
 
-Este README es la **puerta de entrada** de la tarea: para personas y también el punto
-que resume el estado y el razonamiento acumulado (el "brain") para no tener que
-re-derivarlo cada vez.
+Repo del Blue Team: infraestructura de red de defensa (router/firewall + Wazuh, Suricata,
+Keycloak, mail, honeypot y blancos vulnerables en Docker) y su documentación formal.
+Este README es la **puerta de entrada**: qué hay, cómo levantarlo desde cero, en qué
+estado está y qué falta.
+
+## Empezar desde cero
+
+**Si no tenés nada armado: ir a [`vagrant/README.md`](vagrant/README.md).** Con
+VirtualBox + Vagrant en tu máquina, `vagrant up` levanta el router y todos los stacks
+automáticamente (15-30 min, necesita 16 GB de RAM). Ahí está también cómo entrar a las
+consolas, cómo sumar una VM atacante y cómo usar OPNsense como router.
+
+Cada integrante levanta su propio entorno; no hace falta acceso a la máquina de nadie.
 
 ## Contenido
-
-- **`LETRA.md`** — La letra completa de la tarea: marco teórico, glosario, requerimientos funcionales/no funcionales, arquitectura sugerida, Partes Blue Team y Red Team, matriz de documentación, hitos, KPIs y criterios de evaluación. Fuente original, no se edita.
-- **`docs/`** — Carpeta de trabajo del equipo para la documentación de la solución (ver `docs/README.md` para el checklist de entregables).
-- **`infra/`** — Despliegue Docker-first de la infraestructura de defensa (ver `infra/README.md` para arquitectura, stacks y cómo levantarla).
-- **`vagrant/`** — Reproducción portable de la misma infra en VirtualBox (ver `vagrant/README.md`), para que el Red Team la ataque en su propia máquina sin depender del Proxmox compartido.
-- **`brain/`** — Base de conocimiento específica de esta tarea: decisiones de arquitectura, hechos estables y lecciones aprendidas que no viven en la letra ni en las plantillas. Ver "Brain de la Tarea 3" abajo.
-
-## Brain de la Tarea 3
-
-Es un brain **propio de esta tarea**: guarda el *por qué* de las decisiones, los
-errores ya pisados y el estado actual, para no re-derivarlo cada vez (ni que lo tenga
-que re-derivar una IA). Está pensado para leerse con o sin asistente de IA — el
-`CLAUDE.md` de la raíz orienta a Claude Code automáticamente; con otra IA, pasarle este
-README y `brain/MEMORY.md` primero.
 
 ```
 TSI-2026-Infra/
 ├── CLAUDE.md        ← orientación para asistentes de IA (corto)
-├── README.md        ← este archivo: entrada humana + base del brain
-├── LETRA.md          ← fuente original, intocable desde el brain
-├── brain/
-│   ├── CLAUDE.md      ← mapa y reglas completas del brain
-│   ├── MEMORY.md       ← hechos estables: fechas, equipo, RF/RNF, arquitectura decidida
-│   ├── decisions.md     ← log de decisiones de arquitectura/alcance, con fecha y motivo
-│   ├── LEARNINGS.md     ← lecciones aprendidas (se completa con el avance)
-│   └── notes/            ← notas puntuales por tema (se crea bajo demanda)
-├── docs/                ← entregables formales (plantillas ISACA + MCU completadas)
-├── infra/                ← despliegue Docker-first (ver infra/README.md)
-└── vagrant/               ← reproducción portable en VirtualBox para el Red Team
+├── README.md        ← este archivo
+├── LETRA.md          ← consigna oficial de la tarea (no se edita)
+├── vagrant/          ← despliegue desde cero en VirtualBox (empezar acá)
+├── infra/            ← los stacks Docker (lo que corre adentro de docker-host)
+├── docs/             ← entregables formales (plantillas ISACA + MCU completadas)
+└── brain/            ← el "por qué": estado actual, decisiones, errores ya pisados
+    ├── MEMORY.md       ← foto del estado actual (red, IPs, contenedores, pendientes)
+    ├── decisions.md    ← historial de decisiones con fecha y motivo
+    ├── LEARNINGS.md    ← errores ya vistos y su causa
+    └── notes/          ← plan de recuperación del atraso, etc.
 ```
 
-**Protocolo de lectura sugerido:**
-1. Este README — visión general y estado.
-2. `brain/MEMORY.md` — hechos estables, para no releer toda la letra cada sesión.
-3. `docs/README.md` e `infra/README.md` — estado real de avance (son la fuente de verdad, el brain no los duplica).
-4. `brain/notes/<tema>.md` — si hace falta profundizar en un tema puntual.
-5. `brain/CLAUDE.md` — reglas completas, solo si vas a escribir/actualizar el brain.
+Pensado para leerse con o sin asistente de IA: el `CLAUDE.md` de la raíz orienta a
+Claude Code solo; con otra IA, pasarle primero `CLAUDE.md`, este README y
+`brain/MEMORY.md`.
 
-## Estado actual (resumen al 2026-10-02 — detalle y fuentes en `brain/MEMORY.md`)
+## Estado actual (2026-10-02)
 
-- **infra/**: red de 4 VLANs completa (`opnrouter` + `docker-host`) y **6 de 9 stacks
-  corriendo (11 contenedores)**: `identity` (Keycloak), `siem-hids` (Wazuh ×3), `nids`
-  (Suricata), `mail`, `honeypot` (Cowrie), `targets` (DVWA + DB + SSH víctima). Sin
-  construir: `wazo`, `alerting`.
-- Pendiente de infra: agente Wazuh en `targets` (HIDS/FIM real), regla de firewall en
-  OPNsense para que los agentes lleguen al manager, **llevar los logs de Suricata y
-  Cowrie a Wazuh** (hoy el SIEM no los ve — sin esto no hay correlación ni demo de
-  CU-01), MFA configurado dentro de Keycloak, playbooks de Active Response (RF-06), y
-  resolver cómo llega tráfico real espejado a `nids`.
-- **docs/**: `40-consigna-propia.md` y `00-arquitectura.md` tienen borrador actualizado
-  contra la infra real — **falta revisarlos entre los dos y aprobación docente**. El
-  resto de la matriz sigue en `☐` en `docs/README.md`. Bitácora sin empezar.
-- **vagrant/**: copia portable para el Red Team, escrita pero **sin probar** en una
-  máquina física (se intentó anidada en Proxmox y no funciona por limitación de
-  hardware, ver `brain/LEARNINGS.md`).
-- Los hitos H1 (21/09) y H2 (28/09) estaban vencidos al 01/10 — se sigue un plan de
-  recuperación con el estado al día en `brain/notes/plan-recuperacion-atraso.md`.
-  **La infra va adelantada, la documentación atrasada.**
+- **Infra construida en el repo:** 6 de 9 stacks — `identity` (Keycloak), `siem-hids`
+  (Wazuh manager + indexer + dashboard), `nids` (Suricata con reglas para CU-01),
+  `mail`, `honeypot` (Cowrie), `targets` (DVWA + MySQL + host SSH víctima). Sin
+  construir: `wazo`, `alerting` (y `soar-thehive-optional`, que no hace falta).
+  Probados y funcionando en el despliegue de referencia de uno de los integrantes.
+- **`vagrant/`:** escrito y revisado, **todavía no probado de punta a punta en una
+  máquina física**. Quien lo corra primero: anotar en `brain/LEARNINGS.md` lo que falle.
+- **docs/:** `00-arquitectura.md` y `40-consigna-propia.md` en borrador — **falta
+  revisarlos entre los dos y aprobación docente**. El resto de la matriz en `☐`
+  (`docs/README.md`). Bitácora sin empezar.
+- Atraso: H1 (21/09) y H2 (28/09) vencidos; se sigue
+  `brain/notes/plan-recuperacion-atraso.md`. **La infra va adelantada, la documentación
+  atrasada.**
 
-## Para retomar (compañero / asistente de IA)
+## Pendientes
 
-### Cómo llegar a las consolas
+### Infra (para la demo de la auditoría)
 
-Las 4 VLANs (`10.10.x.0/24`) **no se ven desde la red de casa/laboratorio
-(`192.168.0.0/24`)** — solo desde adentro. Dos formas verificadas o razonables:
+1. **Logs de Suricata y Cowrie → Wazuh.** Hoy cada uno escribe en su volumen y el SIEM
+   no los ve: sin esto no hay correlación (RF-05) ni se ve el CU-01 en el dashboard.
+2. **Agente Wazuh en `targets`** (HIDS/FIM, RF-04) + regla de firewall
+   Servidores/Usuarios → Gestión puertos 1514/1515 (en nftables ya está; en OPNsense hay
+   que crearla).
+3. **MFA en Keycloak** (TOTP/WebAuthn, RF-12): el contenedor corre, falta configurar
+   realm, usuarios y MFA.
+4. **Playbooks de Active Response** de Wazuh para los 3 casos de RF-06.
+5. Decidir cómo le llega tráfico espejado a Suricata (hoy ve solo el tráfico de la DMZ).
+6. `wazo` y `alerting` (no bloquean el 07/10).
 
-1. **Desde la VM `kali` (ID 120)** — está conectada a la VLAN Servidores. Abrir su
-   consola en Proxmox y usar el navegador/curl desde ahí. Llegar a las otras VLANs
-   depende de las reglas de OPNsense (la LAN de OPNsense permite salir a todo por
-   defecto, así que probablemente funciona — *no verificado*).
-2. **Desde el host Proxmox, a través de `docker-host`** (verificado): `docker-host` está
-   en las 4 VLANs, así que `pct exec 108 -- curl ...` desde la shell del nodo llega a
-   cualquier servicio.
+Detalle técnico de cada uno en `infra/README.md` → "Qué falta".
 
-| Servicio | Dirección | Credenciales (hoy) |
+### Documentación
+
+Toda la matriz ISACA salvo los dos borradores, Excel MCU 5.0, bitácora diaria y los 3
+ataques simulados documentados con evidencia (CU-01 recon, CU-02 fuerza bruta SSH,
+CU-03 webshell). Ver `docs/README.md` y el plan de recuperación.
+
+### Seguridad (antes de la auditoría del 14/10)
+
+1. Cambiar las contraseñas de laboratorio de los `.env` (Keycloak, MySQL, Wazuh API). La
+   del host SSH víctima es débil **a propósito** (CU-02): dejarla, pero documentarlo.
+2. El indexer de Wazuh corre **sin plugin de seguridad** (simplificación de
+   laboratorio): justificarlo como N/A en el Excel MCU o activarlo.
+
+## Direcciones de los servicios
+
+Iguales en cualquier despliegue (son parte del diseño, `docs/00-arquitectura.md`).
+Cómo llegar a ellas desde tu máquina: `vagrant/README.md` → "Cómo entrar a las consolas".
+
+| Servicio | Dirección | Credenciales por defecto (`.env.example`) |
 |---|---|---|
-| OPNsense (router) | `https://10.10.10.254` | las que configuró el equipo — pedirlas, no están en el repo |
-| Wazuh dashboard | `http://10.10.90.12:5601` (HTTP, no HTTPS) | *sin verificar si pide login* (el indexer tiene el plugin de seguridad apagado). API Wazuh: `wazuh-wui` / `WAZUH_API_PASSWORD` de `infra/siem-hids/.env` |
-| Keycloak (admin) | `http://10.10.90.1:8080` (IP dinámica, ver `brain/MEMORY.md`) | `admin` / `KEYCLOAK_ADMIN_PASSWORD` de `infra/identity/.env` (hoy `changeme`). *No verificado* si redirige al hostname `auth.lab.local` |
-| App de préstamos (DVWA) | `http://10.10.10.10` | DVWA por defecto: `admin` / `password` |
-| Host SSH víctima | `ssh -p 2222 labuser@10.10.30.10` | `labuser` / `SSH_TEST_PASSWORD` de `infra/targets/.env` |
-| Honeypot Cowrie | `10.10.20.30` puertos `2222` (SSH) / `2223` (Telnet) | cualquier credencial (es una trampa) |
-| Mail | `10.10.20.20`, SMTP `25`/`587`, IMAPS `993` | cuenta `alertas@lab.local`, password elegida al crearla |
-| Proxmox | `https://192.168.0.102:8006` | cuenta propia de cada uno |
+| Router (gateway de cada VLAN) | `10.10.X.254` | OPNsense: las que elijas al instalar |
+| Wazuh dashboard | `http://10.10.90.12:5601` | *sin verificar si pide login*. API: `wazuh-wui` / `WAZUH_API_PASSWORD` |
+| Keycloak | `http://10.10.90.20:8080` | `admin` / `changeme` |
+| App de préstamos (DVWA) | `http://10.10.10.10` | `admin` / `password` |
+| Host SSH víctima | `ssh -p 2222 labuser@10.10.30.10` | `labuser` / `changeme_intentionally_weak` |
+| Honeypot Cowrie | `10.10.20.30` puertos 2222 / 2223 | cualquiera (es una trampa) |
+| Mail | `10.10.20.20` (25, 587, 993) | crear la cuenta: `docker exec -it mailserver setup email add alertas@lab.local <pass>` |
 
-Los `.env` reales viven **solo dentro de `docker-host`** (`/opt/TSI-2026-Infra/infra/*/.env`,
-gitignored). Hoy tienen los valores de laboratorio de los `.env.example`.
+## Reglas del repo
 
-### Credenciales y accesos — reglas
+- **Es público: nada de secretos.** `.gitignore` ya excluye `.env`, certs de mail y
+  backups `config.xml` de OPNsense. Los `.env` reales viven solo dentro de cada
+  `docker-host`.
+- Las **plantillas** ISACA, Excel MCU 5.0, arquitectura 4+1/C4 e informe Red Team son
+  material del curso y **no están en este repo** (`LETRA.md` las nombra con rutas
+  `plantilla/...` que acá no existen).
 
-- **Nada de secretos en el repo** (`.gitignore` ya excluye `.env`, certs de mail y
-  backups `config.xml` de OPNsense). El repo es **público**.
-- Los tokens/keys que se crearon para que Claude trabajara (token Proxmox, API key
-  OPNsense, key SSH) están solo en la máquina de quien los creó. **No se pasan**: si el
-  compañero o su IA necesitan acceso, que cada uno cree los suyos.
-
-### Pendientes de seguridad (hacer antes de la auditoría del 14/10)
-
-1. Sacar la key SSH `claude-code-tarea3` de `/root/.ssh/authorized_keys` en `proxmox01`
-   (y en la VM 109 si no se borra).
-2. Token de Proxmox `root@pam!claude-fq-tsi`: hoy tiene rol **`Administrator`** en `/`
-   (necesario para crear bridges) — revocarlo o bajarle permisos cuando no se use.
-3. API key de OPNsense creada para Claude (empieza con `iCFF/`): borrarla en
-   System → Access → Users → root → API keys.
-4. Cambiar las contraseñas por defecto de los `.env` en uso (Keycloak, MySQL, Wazuh API,
-   SSH víctima — esta última es débil **a propósito** para CU-02, dejarla así pero
-   documentarlo).
-5. Indexer de Wazuh corre **sin plugin de seguridad** (simplificación de laboratorio):
-   justificarlo como N/A en el Excel MCU o activarlo.
-6. VM 109 `vbox-test-host` (apagada, 80 GB de disco): borrarla si nadie va a seguir con
-   la prueba de VirtualBox anidado.
-
-### Material que NO está en este repo
-
-- **Plantillas** ISACA (`plantilla/isaca/`), Excel MCU 5.0 (`plantilla/mcu5/excel/`),
-  arquitectura 4+1/C4 e informe Red Team: son material del curso, viven fuera de este
-  repo (en la carpeta del curso de cada uno). `LETRA.md` y algunos docs las referencian
-  con rutas `../plantilla/...` que acá no existen.
-- **`config.xml` de OPNsense** (backup real para la copia del Red Team): lo tiene quien lo
-  bajó, se pasa por canal privado.
-
-## Cómo empezar
+## Cómo empezar (según la letra)
 
 1. Lea `LETRA.md` completo.
 2. En la **Semana 1** el equipo genera su **consigna propia** (escenario empresarial ficticio + diagrama de red + casos de uso). Se aprueba con el docente antes de avanzar.
 3. Revise la matriz de documentación (sección 8) para saber qué plantilla llenar en cada semana.
-4. Copie de `../plantilla/isaca/` las plantillas indicadas a su carpeta `docs/`.
+4. Copie las plantillas ISACA indicadas (material del curso) a la carpeta `docs/`.
 5. Trabaje en su repositorio GIT y congele la entrega con `git tag v1.0` en el hito H4.
 
 ## Documentación que debe entregar (resumen)

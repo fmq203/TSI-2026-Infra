@@ -6,35 +6,34 @@ Que **cualquiera pueda levantar la infraestructura de defensa** con el mínimo d
 casi todo corre en `docker compose`, reproducible y versionado. Solo 1 pieza queda
 fuera de Docker porque su naturaleza lo exige (ver abajo).
 
-> ✅ **Actualizado 2026-10-02: esto ya no es un esqueleto con placeholders — es la
-> infraestructura real, desplegada y corriendo.** IPs/VLANs son las reales de
-> `opnrouter` (VM 124) y `docker-host` (CT 108). **6 de 9 stacks arriba (11
-> contenedores)**: identity, siem-hids, nids, mail, honeypot, targets. Sin construir
-> (no existen sus carpetas todavía): `wazo`, `alerting`, `soar-thehive-optional`. Ver
-> `../brain/MEMORY.md` para IPs reales de cada contenedor y estado de cada pieza.
+> **Para desplegar desde cero en VirtualBox, ir a `../vagrant/README.md`** — hace todo
+> lo de esta carpeta automáticamente. Este README explica qué hay adentro de
+> `docker-host` y cómo levantarlo a mano en cualquier Linux con 4 NICs.
+>
+> Estado: **6 de 9 stacks construidos (11 contenedores)**: identity, siem-hids, nids,
+> mail, honeypot, targets. Sin construir (no existen sus carpetas): `wazo`, `alerting`,
+> `soar-thehive-optional`. IPs de cada contenedor en `../brain/MEMORY.md`.
 
-## Arquitectura: 1 VM (router) + 1 LXC (docker-host) + todo el resto en contenedores
+## Arquitectura: 1 router + 1 docker-host + todo el resto en contenedores
 
-`docker-host` terminó siendo un **LXC privilegiado**, no una VM — más liviano en RAM/CPU
-(recurso escaso en este Proxmox compartido) y es el mismo patrón que ya traía el equipo
-de un intento anterior (`lab-srv-datos`/`lab-web-dmz` también son LXC). Privilegiado
-porque `docker-mailserver` necesita escribir un sysctl (`kernel.domainname`) que un LXC
-no privilegiado deniega — ver `../brain/decisions.md` y `../brain/LEARNINGS.md`.
+`docker-host` es una VM en VirtualBox, o un **LXC privilegiado** en Proxmox (más liviano;
+privilegiado porque `docker-mailserver` necesita escribir un sysctl, `kernel.domainname`,
+que un LXC no privilegiado deniega — ver `../brain/LEARNINGS.md`).
 
 ```
                          ┌─────────────────────────────┐
-                         │   VM: opnrouter (124)         │
-                         │   OPNsense/pfSense            │
-                         │   - VLAN trunking real         │
-                         │   - NAT / reglas perímetro      │
+                         │   router (VM)                 │
+                         │   OPNsense, o nftables en     │
+                         │   VirtualBox                  │
+                         │   - NAT / reglas entre VLANs   │
                          └──────────┬──┬──┬──┬────────────┘
-                     vmbr11 (Srv)   │  │  │  │ vmbr13 (Mgmt)
+                    Servidores (10) │  │  │  │ Gestión (90)
                                     │  │  │  └──────────────────┐
-                        vmbr12 (DMZ)│  │vmbr1 (Usr)             │
+                            DMZ (20)│  │Usuarios (30)           │
                          ┌──────────▼──▼──▼──────────────────┐  │
-                         │   LXC privilegiado: docker-host (108)│ │
-                         │   Debian 13 + Docker Engine, 1 NIC    │
-                         │   por VLAN (eth0..eth3)                │
+                         │   docker-host (VM o LXC privil.)    │ │
+                         │   Linux + Docker Engine, 1 NIC        │
+                         │   por VLAN, .5 en todas               │
                          │                                         │
                          │  ┌───────────────────────────────────┐ │
                          │  │ identity/ (Keycloak)          ✅    │ │
@@ -50,22 +49,21 @@ no privilegiado deniega — ver `../brain/decisions.md` y `../brain/LEARNINGS.md
                          └─────────────────────────────────────────┘
 ```
 
-### Por qué el router sigue siendo VM (y docker-host no)
+### Por qué el router es una VM aparte
 
-| Pieza | Motivo |
-|---|---|
-| **Router/FW** | OPNsense/pfSense es FreeBSD — un LXC solo puede correr contenedores Linux (comparte el kernel del host), no es una opción, es una limitación técnica dura. Además necesita manejar VLAN trunking (802.1Q), NAT, y la letra (sección 0.2) pide la "Vista Física" como diagrama central — se espera un dispositivo de red real. |
-| **docker-host** | LXC privilegiado (no VM): más liviano, mismo patrón que ya usaba el equipo (`lab-srv-datos`/`lab-web-dmz`). Todo lo que corre *dentro* es 100% Docker Compose. |
+OPNsense/pfSense es FreeBSD: no puede correr en un contenedor Linux. Además hace NAT y el
+filtrado entre VLANs, y la letra (sección 0.2) pide la "Vista Física" como diagrama
+central — se espera un dispositivo de red real, no una abstracción de Docker.
 
 Todo lo demás — SIEM, HIDS, NIDS, SOAR (Active Response), honeypot, mail, identidad/MFA,
 Wazo, hosts víctima — es contenedor. Eso es lo que se pidió: "lo más posible en Docker".
 
-## Provisioning desde cero (si hay que rearmar todo en otro Proxmox)
+## Alternativa: desplegar en Proxmox en vez de VirtualBox
 
-Lo que sigue abajo (redes Docker + stacks) asume que **ya existen** `opnrouter` y
-`docker-host`. Si hay que crearlos de cero (otro Proxmox, o si se perdieron), estos son
-los pasos reales que se usaron acá — ver `../brain/decisions.md` para el detalle de cada
-decisión.
+Para quien tenga un Proxmox propio. Lo de abajo (redes Docker + stacks) asume que **ya
+existen** el router y `docker-host`; estos son los pasos para crearlos — ver
+`../brain/decisions.md` y `../brain/LEARNINGS.md` para el detalle y los problemas que
+aparecieron.
 
 ### 1. Crear las 4 bridges de red en el host Proxmox
 
@@ -156,31 +154,31 @@ De acá en adelante, seguir "Cómo levantar" más abajo.
 `siem-hids/` — sin contenedor adicional. Evita cargar Cassandra+Elasticsearch de TheHive
 solo para eso. `soar-thehive-optional/` solo se construiría si sobra tiempo y RAM.
 
-Presupuesto total contenedores: **~8-9 GB** de RAM. `docker-host` quedó con límite de
-**9 GB** (subido de los 6 GB iniciales cuando se agregó Wazuh), dentro del margen real
-del Proxmox del laboratorio (nodo único, 6 cores / 23.28 GB, ~10.7 GB libres al
-2026-10-02 — **no tocar VMs existentes** `kali`, `unifios`, etc.; `opnrouter` SÍ es de
-esta tarea, es el router).
+Presupuesto total contenedores: **~8-9 GB** de RAM — darle a `docker-host` 9-10 GB
+(con 6 GB Wazuh no entra cómodo).
 
 ## Redes compartidas (VLANs → redes Docker)
 
-Todas las redes se declaran una sola vez en `docker-compose.networks.yml` como `external`,
-y cada stack las referencia. Así se crean antes de levantar ningún stack.
+Las 4 redes son **macvlan** colgadas de cada NIC de `docker-host` y se crean con
+`create-networks.sh` (que detecta qué NIC es cuál por su IP `.5`). Cada stack las usa
+como `external`. `docker-compose.networks.yml` queda solo como referencia legible.
 
 | Red Docker | VLAN | Segmento | Quién vive ahí |
 |---|---|---|---|
-| `net_srv` | VLAN 10 (10.10.10.0/24) | Servidores | targets (app+db); ya existe `lab-srv-datos` (CT 210) |
-| `net_dmz` | VLAN 20 (10.10.20.0/24) | DMZ | Wazo (pendiente), mail, honeypot, **NIDS (Suricata)**; ya existe `lab-web-dmz` (CT 211) |
-| `net_usr` | VLAN 30 (10.10.30.0/24) | Usuarios | host SSH cliente víctima, puestos de prueba |
+| `net_srv` | VLAN 10 (10.10.10.0/24) | Servidores | targets (app + db) |
+| `net_dmz` | VLAN 20 (10.10.20.0/24) | DMZ | mail, honeypot, **NIDS (Suricata)**, Wazo (pendiente) |
+| `net_usr` | VLAN 30 (10.10.30.0/24) | Usuarios | host SSH víctima, puestos de prueba |
 | `net_mgmt` | VLAN 90 (10.10.90.0/24) | Gestión | Wazuh (×3), Keycloak, alerting (pendiente) |
 
-> El mapeo es **10 = Servidores, 20 = DMZ** (así quedó físicamente armado en Proxmox
-> desde un intento previo del equipo — ver `../brain/decisions.md`). NIDS se movió de
-> Gestión a DMZ el 2026-10-02: un contenedor Docker solo ve la interfaz de SU red,
-> nombrada `eth0` puertas adentro — con dos redes conectadas el nombre deja de ser
-> predecible, así que Suricata va en una sola (DMZ).
+> El mapeo es **10 = Servidores, 20 = DMZ** (no al revés). Suricata está en una sola red
+> (DMZ) a propósito: un contenedor ve cada red como `eth0`, `eth1`... en orden de
+> conexión, sin relación con los nombres del host; con una sola red, su interfaz de
+> captura es siempre `eth0`.
+>
+> Limitación de macvlan: `docker-host` **no puede hablar con sus propios contenedores**
+> (ni `curl` ni ping). Para probar un servicio, hacerlo desde el router u otra VM.
 
-## Cómo levantar (orden recomendado — ya ejecutado 2026-10-02, referencia para rearmar)
+## Cómo levantar
 
 **Camino corto** (dentro de `docker-host`, desde esta carpeta `infra/`):
 
@@ -191,7 +189,7 @@ make logs     # últimas líneas de cada stack
 ```
 
 Los contenedores tienen `restart: unless-stopped`: si se reinicia `docker-host`, vuelven
-solos (verificado 2026-10-02), no hace falta re-correr nada.
+solos, no hace falta re-correr nada.
 
 **Camino manual** (lo mismo que hace `make up`, paso a paso):
 
@@ -228,17 +226,16 @@ cd "$INFRA/targets"    && docker compose up -d
 > dashboard hacia el indexer en el primer minuto son normales. Mirar de nuevo antes de
 > tocar nada.
 
-## Qué falta para que esto sea "real" (no solo esqueleto)
+## Qué falta
 
-1. ~~Consigna propia aprobada (H1, 21/09)~~ — borrador escrito, pendiente aprobación
-   docente (`docs/40-consigna-propia.md`). IPs/VLANs reales ya reemplazaron los
-   placeholders en todos los `.env`.
-2. ~~Desplegar identity, siem-hids, nids, mail, honeypot, targets~~ — hecho 2026-10-02,
-   6 stacks / 11 contenedores corriendo. Reglas de Suricata escritas para CU-01
-   (`nids/rules/local.rules`). Faltan los decoders/reglas de Wazuh para CU-02..CU-05.
-3. **Agente Wazuh en `targets`** (HIDS/FIM real, RF-04) — no instalado todavía. Hace
-   falta además una regla de firewall en OPNsense: VLAN Servidores/Usuarios → VLAN
-   Gestión, puertos 1514/1515 (si no, el agente nunca llega al manager).
+1. ~~Consigna propia~~ — borrador escrito, pendiente aprobación docente
+   (`docs/40-consigna-propia.md`).
+2. ~~Stacks identity, siem-hids, nids, mail, honeypot, targets~~ — construidos y
+   probados. Reglas de Suricata escritas para CU-01 (`nids/rules/local.rules`). Faltan
+   los decoders/reglas de Wazuh para CU-02..CU-05.
+3. **Agente Wazuh en `targets`** (HIDS/FIM real, RF-04) — no instalado todavía. El
+   router tiene que dejar pasar Servidores/Usuarios → Gestión puertos 1514/1515: el
+   router nftables de `vagrant/` ya lo permite; en OPNsense hay que crear la regla.
 4. **Logs de Suricata y Cowrie → Wazuh**: hoy `nids` escribe `eve.json` en el volumen
    `suricata_logs` y `honeypot` en `cowrie_logs`, y nadie los lee. Hace falta montarlos
    en `wazuh.manager` (o un agente/forwarder) y declararlos como `<localfile>` en
@@ -248,15 +245,8 @@ cd "$INFRA/targets"    && docker compose up -d
 6. **Playbooks de Active Response** (scripts) para los 3 casos de RF-06.
 7. ⚠️ **Pendiente de decidir:** cómo llega tráfico real espejado a Suricata — hoy corre
    en la VLAN DMZ y ve tráfico local de ese segmento vía macvlan, no un mirror explícito
-   del router. Opciones: port-mirror a nivel de bridge en Proxmox, o correr Suricata
-   directo en OPNsense vía su plugin nativo `os-suricata` (más simple, evita todo el
-   problema de mirroring). Las reglas de `local.rules` sirven para cualquiera de las
-   dos. Ver `../brain/decisions.md`.
+   del router. Opciones: espejar tráfico a nivel del hipervisor (bridge/switch virtual),
+   o correr Suricata directo en OPNsense vía su plugin nativo `os-suricata` (más simple,
+   evita todo el problema de mirroring). Las reglas de `local.rules` sirven para
+   cualquiera de las dos. Ver `../brain/decisions.md`.
 8. `wazo` y `alerting` sin construir — no bloquean el freeze del 07/10.
-
-## Verificación de que el aprovisionamiento del entorno es correcto
-
-Nodo Proxmox usado (`proxmox01`): 6 cores / 23.28 GB RAM. De esta tarea: `opnrouter`
-(VM 124, reutilizada de un intento anterior del equipo) y `docker-host` (CT 108, LXC
-privilegiado, nuevo). El resto de las VMs/CT del nodo (`kali`, `unifios`, `forti`, etc.)
-son de **otras materias/tareas del curso** y no se tocan.

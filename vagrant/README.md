@@ -1,116 +1,171 @@
-# Reproducción portable (VirtualBox/Vagrant) — para el Red Team
+# Despliegue desde cero en VirtualBox
 
-Esta carpeta NO es la infraestructura del Blue Team (esa vive en Proxmox, ver
-`../infra/README.md`). Es una **copia reproducible en VirtualBox** de la misma
-arquitectura (mismas 4 VLANs, mismas IPs, mismos stacks Docker) para que el Red Team la
-levante en su propia máquina y la ataque sin depender del Proxmox compartido.
+Camino para levantar **toda la infraestructura en tu propia máquina**, sin acceso a
+ningún otro servidor. Sirve para el Blue Team (construir y probar) y para el Red Team
+(atacar una copia). Misma arquitectura que `../docs/00-arquitectura.md`: 4 VLANs, mismas
+IPs, mismos stacks Docker de `../infra/`.
 
-## Por qué no es 100% idéntica
+## Requisitos de tu máquina
 
-| Pieza | Blue Team (Proxmox) | Acá (VirtualBox) | Por qué |
+- **CPU x86_64 (Intel/AMD)** con virtualización activada en la BIOS (VT-x / AMD-V).
+  VirtualBox **no** corre estas VMs en Mac con chip Apple (M1/M2/M3).
+- **16 GB de RAM o más.** `docker-host` pide 10 GB (Wazuh es lo pesado) + 1 GB el router
+  + lo que use tu sistema. Con menos RAM, bajarlo así (Wazuh puede quedar justo):
+  `DOCKER_HOST_MEM=7168 vagrant up` (en PowerShell: `$env:DOCKER_HOST_MEM=7168; vagrant up`).
+- ~30 GB de disco libre.
+- [VirtualBox 7.x](https://www.virtualbox.org/wiki/Downloads) y
+  [Vagrant 2.4+](https://developer.hashicorp.com/vagrant/install).
+- **Windows:** si tenés Hyper-V, WSL2 o "Plataforma de máquina virtual" activados,
+  VirtualBox puede andar muy lento o no arrancar las VMs. Si pasa, desactivarlos
+  (Características de Windows) y reiniciar.
+- Internet (la primera vez baja el box de Debian y ~5 GB de imágenes Docker).
+
+## Qué se levanta
+
+| VM | Qué es | Redes |
+|---|---|---|
+| `router` | Debian + nftables: NAT, segmentación y firewall entre VLANs | `vlan_wan` + las 4 VLANs |
+| `docker-host` | Debian + Docker con todos los stacks (`make up` de `../infra/`) | las 4 VLANs |
+
+| Red de VirtualBox | VLAN | Subred | Gateway |
 |---|---|---|---|
-| Router | OPNsense/pfSense (VM) | **OPNsense real, importando el `config.xml` real** (opción A) o VM Linux + nftables (opción B, fallback automatizable) | Ver abajo. |
-| docker-host | LXC privilegiado | VM completa | VirtualBox no tiene LXC. Por eso pide más RAM (no hay kernel compartido). |
-| Todo lo demás | Docker Compose | Docker Compose (los mismos `docker-compose.yml`) | Idéntico — por eso el resto de la arquitectura es fiel. |
+| `vlan_wan` | "Internet simulada" (de acá ataca el Red Team) | `203.0.113.0/24` | `.254` |
+| `vlan_srv` | Servidores | `10.10.10.0/24` | `.254` |
+| `vlan_dmz` | DMZ | `10.10.20.0/24` | `.254` |
+| `vlan_usr` | Usuarios | `10.10.30.0/24` | `.254` |
+| `vlan_mgmt` | Gestión | `10.10.90.0/24` | `.254` |
 
-## Router — opción A (recomendada): OPNsense real con el config real importado
-
-Se bajó el `config.xml` real de `opnrouter` vía su API (`/api/core/backup/download/this`).
-**Ese archivo NO está en este repo** (trae el hash de la contraseña de admin y las API
-keys) — pedírselo al Blue Team por un canal privado (no git).
-
-Mapeo de interfaces confirmado (importa limpio si se arma la VM en este mismo orden):
-
-| Interfaz OPNsense | NIC (virtio) | Rol | IP |
-|---|---|---|---|
-| WAN | `vtnet0` | Internet | DHCP |
-| LAN | `vtnet1` | Servidores | 10.10.10.254 |
-| OPT1 | `vtnet2` | DMZ | 10.10.20.254 |
-| OPT2 | `vtnet3` | Usuarios | 10.10.30.254 |
-| OPT3 | `vtnet4` | Gestión | 10.10.90.254 |
-
-Pasos:
-1. Descargar el ISO de OPNsense (opnsense.org/download) e instalarlo en una VM nueva de
-   VirtualBox — instalador rápido (~10 min), casi todo por defecto.
-2. Antes de instalar, agregarle **5 adaptadores de red**, todos tipo
-   **"Paravirtualized Network (virtio-net)"** (no el Intel PRO/1000 por defecto) y **en
-   este orden**: NAT (o Bridged, para que WAN tenga internet real) → Internal Network
-   `vlan_srv` → `vlan_dmz` → `vlan_usr` → `vlan_mgmt` (mismos nombres que usa
-   `docker-host` en el `Vagrantfile` de esta carpeta). El orden importa: define qué
-   `vtnetN` es cuál.
-3. Instalado OPNsense, entrar a su consola (usuario/pass por defecto `installer`/
-   `opnsense`, se pide cambiar) solo para confirmar que asignó las interfaces en el
-   mismo orden — no hace falta configurar nada más ahí.
-4. Entrar a la UI web → **System → Configuration → Backups** (o **Diagnostics → Config
-   History**, según versión) → **Restore configuration** → subir el `config.xml` que te
-   pasó el Blue Team.
-5. Reiniciar. Debería quedar con las mismas 4 VLANs, mismas reglas de firewall y mismo
-   NAT que la `opnrouter` real.
-
-Si algún `vtnetN` no coincide (quedó una interfaz sin red real detrás), reasignar a mano
-en **Interfaces → Assignments** — 2 minutos, no bloquea nada más.
-
-## Router — opción B (fallback 100% automatizado): nftables
-
-Si no querés/podés instalar OPNsense a mano, `vagrant up` sigue levantando una VM Linux
-con nftables en vez de OPNsense — ver `Vagrantfile`/`provision-router.sh`. Mismo
-comportamiento de red (NAT + segmentación por VLAN), pero si algún hallazgo del Red Team
-depende de una particularidad específica de OPNsense (un paquete, una regla del panel),
-**no se va a reproducir con esta opción** — avisar al Blue Team para validarlo en su
-Proxmox real.
-
-## Requisitos
-
-- VirtualBox + Vagrant instalados.
-- **~12 GB de RAM libres** (docker-host pide 10 GB, el router 1 GB, más el margen del
-  host). Si la máquina tiene menos, bajar `vb.memory` en el `Vagrantfile` — Wazuh es lo
-  que más pesa, se puede probar con 6-7 GB si hace falta ajustar.
-- Conexión a internet (`vagrant up` descarga el box + todas las imágenes Docker la
-  primera vez — puede tardar 10-15 min).
+Son redes **internas** de VirtualBox ("Internal Network"): no se ven desde tu máquina,
+solo entre VMs. Ver "Cómo entrar a las consolas" abajo.
 
 ## Uso
 
 ```bash
-cd vagrant/
+git clone https://github.com/fmq203/TSI-2026-Infra.git
+cd TSI-2026-Infra/vagrant
 vagrant up
 ```
 
-Levanta 2 VMs: `router` y `docker-host`. El segundo clona el repo entero vía carpeta
-compartida (no hace falta `git clone` aparte) y levanta todos los stacks automáticamente
-(mismo proceso que se hizo a mano en Proxmox, pero con los fixes ya aplicados de entrada
-— ver `../brain/LEARNINGS.md`).
+Tarda 15-30 min la primera vez. `docker-host` clona este mismo repo de GitHub
+adentro (en `/opt/TSI-2026-Infra`) y corre `make up`. Si trabajás en un fork, pasá
+`REPO_URL=https://github.com/<vos>/<fork>.git vagrant up`.
 
-Al terminar, `vagrant up` imprime las URLs (dashboard de Wazuh, app de préstamos, etc.).
+Comandos útiles:
 
-## Cómo sumar la máquina atacante (Red Team)
+```bash
+vagrant status                       # estado de las VMs
+vagrant ssh docker-host              # entrar; adentro: sudo docker ps
+vagrant provision docker-host        # re-correr la instalación (es idempotente)
+vagrant halt                         # apagar todo
+vagrant destroy -f && vagrant up     # empezar de cero
+```
 
-Las 4 VLANs internas (`vlan_srv`, `vlan_dmz`, `vlan_usr`, `vlan_mgmt`) son redes
-**Internal Network** de VirtualBox — aisladas, no llegan ni desde ni hacia tu máquina
-anfitriona por defecto. Para atacar como si vinieras "de internet", el router expone una
-quinta red, `vlan_wan` (203.0.113.0/24, rango reservado para documentación — no es
-internet real), pensada para que sumes tu propia VM de ataque (Kali u otra) ahí:
+Para aplicar cambios del repo dentro de `docker-host`: `vagrant ssh docker-host`, y ahí
+`cd /opt/TSI-2026-Infra && sudo git pull && cd infra && sudo make up`.
 
-1. VirtualBox → tu VM atacante → Settings → Network → una NIC → "Internal Network" →
-   nombre **`vlan_wan`**.
-2. Dentro de esa VM, configurar IP estática en `203.0.113.0/24` (ej. `203.0.113.100/24`,
-   gateway `203.0.113.254`).
-3. Desde ahí, atacar lo que el router deja pasar hacia la DMZ: mail (25/587/993), Wazo
-   (5060), honeypot (2222/2223) — igual que un atacante real de internet contra esta
-   consigna. Ver `../docs/40-consigna-propia.md` §3 para los 5 casos de uso y
-   `../docs/00-arquitectura.md` para el detalle de IPs de cada servicio.
+## Cómo entrar a las consolas
 
-Si en algún caso de uso hace falta simular un atacante que YA está adentro de una VLAN
-(ej. un puesto comprometido en Usuarios, para CU-02), sumar esa VM a la Internal Network
-correspondiente (`vlan_usr`, etc.) en vez de `vlan_wan`.
+Las VLANs no se ven desde tu máquina, y **`docker-host` tampoco puede hablar con sus
+propios contenedores** (limitación de las redes macvlan: el host y sus contenedores no
+se ven entre sí). El router sí los ve a todos, así que se pasa por él con un túnel SSH.
+Desde la carpeta `vagrant/`, dejá esto corriendo en una terminal:
 
-## Troubleshooting
+```bash
+vagrant ssh router -- -N -L 5601:10.10.90.12:5601 -L 8080:10.10.90.20:8080 -L 8081:10.10.10.10:80
+```
 
-- Mismos problemas que documentamos en Proxmox pueden aparecer acá (certs de mail,
-  `vm.max_map_count` de Wazuh, Suricata con mounts `:ro`) — el script de provisioning ya
-  los resuelve de entrada, pero si algo falla, `../brain/LEARNINGS.md` tiene el
-  diagnóstico de cada uno.
-- `vagrant reload <nombre-vm>` reinicia una VM sin recrearla. `vagrant destroy -f &&
-  vagrant up` empieza de cero si algo quedó en mal estado.
-- Si el provisioning de `docker-host` falla porque las NICs todavía no tienen IP, correr
-  `vagrant provision docker-host` de nuevo (el script ya tiene un reintento de 60s, pero
-  por las dudas).
+| Servicio | En tu navegador | Credenciales por defecto |
+|---|---|---|
+| Wazuh dashboard | <http://localhost:5601> (tarda ~1 min en levantar) | *sin verificar si pide login* (el indexer corre sin plugin de seguridad). API: `wazuh-wui` / `WAZUH_API_PASSWORD` de `infra/siem-hids/.env` |
+| Keycloak (admin) | <http://localhost:8080> | `admin` / `changeme`. *No verificado:* Keycloak está configurado con hostname `auth.lab.local`; si redirige ahí, agregar `127.0.0.1 auth.lab.local` al archivo hosts de tu máquina y entrar por `http://auth.lab.local:8080` |
+| App de préstamos (DVWA) | <http://localhost:8081> | `admin` / `password` (DVWA por defecto; la primera vez pide "Create / Reset Database") |
+
+Para el resto (SSH víctima, honeypot, mail) lo más cómodo es una VM extra conectada a la
+VLAN que corresponda (ver "Sumar una VM atacante o de administración"). Si reemplazaste
+el router por una OPNsense, no hay `vagrant ssh router`: usá esa VM extra.
+
+Los `.env` reales quedan dentro de `docker-host` en `/opt/TSI-2026-Infra/infra/*/.env`,
+copiados de los `.env.example` (contraseñas de laboratorio — cambiarlas antes de la
+auditoría).
+
+## Sumar una VM atacante o de administración
+
+Cualquier VM (Kali, un Ubuntu con escritorio, etc.) se suma creándola en VirtualBox y en
+**Configuración → Red → Adaptador → "Red interna"** eligiendo el nombre:
+
+| Para... | Red interna | IP estática de ejemplo | Gateway |
+|---|---|---|---|
+| Atacar como si vinieras de internet (Red Team, CU-01) | `vlan_wan` | `203.0.113.100/24` | `203.0.113.254` |
+| Simular un puesto de usuario comprometido (CU-02) | `vlan_usr` | `10.10.30.100/24` | `10.10.30.254` |
+| Administrar Wazuh y Keycloak sin túnel (están en Gestión) | `vlan_mgmt` | `10.10.90.100/24` | `10.10.90.254` |
+
+Desde `vlan_wan` el router solo deja pasar lo que una DMZ real publicaría: mail
+(`10.10.20.20` puertos 25/587/993), honeypot (`10.10.20.30` puertos 2222/2223) y Wazo
+(UDP 5060, cuando exista).
+
+## Router: nftables (por defecto) u OPNsense (manual)
+
+`vagrant up` usa un router **Linux con nftables**, 100% automático. La letra sugiere
+**OPNsense / pfSense / IPFire** como firewall: si este entorno de VirtualBox es el que se
+va a mostrar en la auditoría, conviene reemplazarlo por una OPNsense. No hay box de
+Vagrant para OPNsense, así que es manual (~30 min):
+
+1. Levantar solo `docker-host`: `vagrant up docker-host` (si ya levantaste el router:
+   `vagrant destroy -f router`; los dos no pueden convivir, ambos usan las `.254`).
+2. Bajar el ISO de [opnsense.org](https://opnsense.org/download/) (tipo *dvd*, amd64) y
+   crear una VM en VirtualBox: tipo FreeBSD 64-bit, 2 GB RAM, 20 GB disco, **5
+   adaptadores de red** en este orden, todos tipo *Paravirtualized Network (virtio-net)*
+   para que OPNsense los vea como `vtnet0`..`vtnet4`:
+
+   | Adaptador | Red interna | Interfaz OPNsense | IP |
+   |---|---|---|---|
+   | 1 | `vlan_wan` | WAN | `203.0.113.254/24` (estática, sin gateway) |
+   | 2 | `vlan_srv` | LAN (Servidores) | `10.10.10.254/24` |
+   | 3 | `vlan_dmz` | OPT1 (DMZ) | `10.10.20.254/24` |
+   | 4 | `vlan_usr` | OPT2 (Usuarios) | `10.10.30.254/24` |
+   | 5 | `vlan_mgmt` | OPT3 (Gestión) | `10.10.90.254/24` |
+
+3. Instalar (usuario `installer` / `opnsense`), asignar interfaces e IPs desde la consola
+   (opciones 1 y 2 del menú), y entrar a la web desde una VM en `vlan_srv`:
+   `https://10.10.10.254` (usuario `root`).
+4. En **Interfaces → WAN**: destildar *Block private networks* y **Block bogon
+   networks** (`203.0.113.0/24` está en la lista de bogons y si no se destilda, todo lo
+   que llegue del atacante se descarta).
+5. Habilitar OPT1/OPT2/OPT3 y crear las reglas de **Firewall → Rules** (OPNsense ya
+   deja a la LAN salir a todo por defecto; las OPT arrancan bloqueadas):
+
+   | Interfaz | Acción | Protocolo | Destino | Puertos |
+   |---|---|---|---|---|
+   | WAN | Pass | TCP | `10.10.20.20` | 25, 587, 993 |
+   | WAN | Pass | TCP | `10.10.20.30` | 2222, 2223 |
+   | WAN | Pass | UDP | `10.10.20.40` | 5060 (cuando exista Wazo) |
+   | OPT2 (Usuarios) | Pass | TCP | `10.10.10.10` | 80, 443 |
+   | OPT2 (Usuarios) | Pass | TCP | `10.10.90.10` | 1514, 1515 (agente Wazuh) |
+   | OPT1, OPT3 | — | — | — | sin reglas: solo responden, no inician (igual que nftables) |
+
+   Es el mismo criterio de `../docs/40-consigna-propia.md` §2 y de `provision-router.sh`.
+
+Si el otro integrante te pasa un backup `config.xml` de su OPNsense, se puede importar
+en **System → Configuration → Backups → Restore** en vez del paso 5, pero revisá después
+la WAN (su WAN usa DHCP, acá es estática) y las asignaciones de interfaz. Ese archivo
+trae hashes de contraseñas: **nunca subirlo al repo** (ya está en `.gitignore`).
+
+Diferencia a tener en cuenta con nftables: si un hallazgo del Red Team depende de algo
+propio de OPNsense (un paquete, una regla del panel), con el router nftables no se
+reproduce.
+
+## Problemas conocidos
+
+- **`vagrant up` se queda en "Waiting for machine to boot"**: la virtualización por
+  hardware no llega a VirtualBox. En Windows, ver Hyper-V/WSL2 arriba. No funciona
+  dentro de otra VM (VirtualBox anidado en KVM/Proxmox cuelga siempre en el mismo punto
+  del arranque — probado, ver `../brain/LEARNINGS.md`).
+- **Un contenedor arranca pero no responde desde otra VM**: revisar que las NIC 2-5 de
+  `tarea3-docker-host` tengan *Modo promiscuo: Permitir todo* (el `Vagrantfile` lo
+  configura; si se recreó la VM a mano, hay que ponerlo).
+- **Wazuh: "connection refused" entre manager/dashboard e indexer en el primer
+  minuto**: normal, esperar.
+- **Scripts que fallan con `^M` o "bad interpreter"**: el repo se clonó en Windows con
+  conversión de fin de línea. Ya hay un `.gitattributes` que lo evita; si pasa igual,
+  volver a clonar.
+- Resto de errores ya vistos y su causa: `../brain/LEARNINGS.md`.

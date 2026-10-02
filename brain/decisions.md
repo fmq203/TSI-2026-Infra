@@ -108,10 +108,8 @@ referencia la anterior.
   triple anidamiento en este hardware, no algo configurable. `opnrouter` y
   `docker-host` se apagaron ~1h20 para esta prueba y se restauraron al cortarla; los
   11 contenedores de `docker-host` volvieron solos por `restart: unless-stopped`, sin
-  intervención manual. La VM 109 queda creada y apagada en Proxmox por si alguien
-  quiere retomar la investigación sin apuro — no es necesaria para nada del freeze del
-  07/10. La validación real de `vagrant up` sigue pendiente, a hacer en una máquina
-  física (no anidada) — que es además el escenario real del Red Team.
+  intervención manual. La validación real de `vagrant up` se hace en una máquina
+  física (no anidada) — que es además el escenario del compañero y del Red Team.
   **Fuente:** conversación 2026-10-02.
 
 - **2026-10-02** — Se le dio a Claude acceso **SSH directo al host Proxmox** (key
@@ -120,9 +118,18 @@ referencia la anterior.
   usándose específicamente para `pct exec 108 -- curl ...` contra la API de OPNsense
   (vía `docker-host`, que ya está en la VLAN Servidores) — **no hizo falta** tocar la
   red del host Proxmox (el plan original de asignarle una IP transitoria a `vmbr11` se
-  descartó, el usuario prefirió no modificar nada del host).
-  **⚠️ PENDIENTE DE SEGURIDAD:** el usuario pidió explícitamente que se le recuerde
-  **revocar esta key de `authorized_keys` del host apenas se termine** este trabajo —
-  no es un acceso que deba quedar permanente. Si una sesión futura ve esta nota y la key
-  sigue activa, avisar y ofrecer revocarla.
+  descartó, el usuario prefirió no modificar nada del host). Accesos temporales a ese
+  entorno: los gestiona su dueño fuera del repo.
+  **Fuente:** conversación 2026-10-02.
+
+- **2026-10-02** — **El repo pasa a ser autosuficiente para desplegar desde cero en
+  VirtualBox** (`vagrant/` como camino principal). Motivo: el otro integrante no tiene
+  acceso al Proxmox de referencia y tiene que armar todo en su máquina. Se sacaron del
+  repo todos los pendientes y accesos que dependían de ese Proxmox (IDs de VM, tokens,
+  keys, VMs a borrar); la arquitectura y las IPs no cambian. Arreglos para que `vagrant
+  up` funcione en una máquina limpia: sin carpeta compartida (clona el repo de GitHub;
+  el box de Debian no trae Guest Additions y Windows no tiene rsync), NICs de VLAN de
+  `docker-host` en modo promiscuo "allow-all" (macvlan), `.gitattributes` con LF para
+  los scripts, IP fija para Keycloak (`.20`), su DB (`.21`) y la DB de la app (`.11`), y
+  guía para configurar OPNsense a mano sin depender de un `config.xml` ajeno.
   **Fuente:** conversación 2026-10-02.
