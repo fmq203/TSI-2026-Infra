@@ -57,17 +57,20 @@ real ya armada en Proxmox (`opnrouter` + `lab-srv-datos`/`lab-web-dmz`, ver
 | Dominio | VLAN | Subred | Qué vive ahí |
 |---|---|---|---|
 | Servidores | 10 | 10.10.10.0/24 | App de préstamos + base de datos (`targets/`) |
-| DMZ | 20 | 10.10.20.0/24 | Wazo, mail, honeypot (expuestos o semi-expuestos) |
+| DMZ | 20 | 10.10.20.0/24 | Wazo, mail, honeypot, NIDS (Suricata) |
 | Usuarios | 30 | 10.10.30.0/24 | Puestos de Atención al cliente/Administración |
-| Gestión | 90 | 10.10.90.0/24 | Wazuh, Keycloak, interfaz de sniffing del NIDS |
+| Gestión | 90 | 10.10.90.0/24 | Wazuh, Keycloak |
 
 Flujos permitidos (resumen, detallar en el diagrama físico):
 - Internet → DMZ: solo puertos de los servicios publicados (SMTP/submission, SIP/RTP de
   Wazo, el puerto trampa del honeypot).
 - DMZ → Servidores: nada directo salvo lo estrictamente necesario (ninguno por defecto).
 - Usuarios → Servidores: solo HTTPS a la app de préstamos.
-- Cualquier VLAN → Gestión: bloqueado salvo admins autenticados con MFA (RF-12).
-- Gestión recibe espejo de tráfico (SPAN) del switch/router para el NIDS.
+- Cualquier VLAN → Gestión: bloqueado salvo admins autenticados con MFA (RF-12), y
+  agentes Wazuh (1514/1515) desde Servidores/Usuarios hacia el manager.
+- El NIDS (Suricata) corre en la DMZ y hoy ve tráfico local de ese segmento vía macvlan,
+  no un espejo (SPAN) explícito del router — pendiente de resolver, ver
+  `../brain/decisions.md`.
 
 ## 3. Casos de uso de seguridad (mínimo 5 — RF-01)
 

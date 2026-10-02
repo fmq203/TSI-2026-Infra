@@ -118,9 +118,42 @@ updated: 2026-10-01
 - **Completo (2026-10-01):** `opnrouter` reiniciado (2 cores/2GB activos), y el equipo
   asignó `10.10.30.254/24` (Usuarios) y `10.10.90.254/24` (Gestión) a las 2 interfaces
   nuevas dentro de OPNsense. Las 4 VLANs están arriba en `opnrouter` y `docker-host`.
-- Pendiente ahora: instalar Docker dentro de `docker-host` — no hay ejecución remota
-  dentro de un LXC vía las herramientas disponibles, lo tiene que hacer el equipo por
-  consola/SSH. Si Docker falla por no ser privilegiado, convertir el CT a privilegiado
-  desde la UI. Después: copiar `infra/` a `docker-host`, levantar
-  `docker-compose.networks.yml` y los stacks que ya tienen compose (`identity`, `mail`,
-  `honeypot`, `targets`).
+- **Completo (2026-10-01): infra desplegada y corriendo.** `docker-host` tuvo que
+  **recrearse como privilegiado** — `docker-mailserver` necesita escribir un sysctl
+  (`kernel.domainname`) que un LXC no privilegiado deniega, y `unprivileged` resultó ser
+  una opción **read-only** en Proxmox (no se puede cambiar en caliente ni en frío sin
+  recrear). Recrear como privilegiado tampoco se pudo por API con ningún token —
+  Proxmox bloquea esa operación específica para *cualquier* token, incluso `root@pam`
+  con rol Administrator; exige sesión real (ticket), por eso se hizo con `pct create`
+  en la shell del host. CT 108 recreado privilegiado, mismas 4 IPs, con Docker + todos
+  los stacks desplegados vía `/opt/TSI-2026-Infra` (ver repo nuevo abajo).
+  Contenedores corriendo: `identity-db`, `keycloak`, `mailserver`, `cowrie`,
+  `target-app-db`, `target-webapp`, `target-ssh-client`, `suricata`.
+- **Repo nuevo:** el código de esta tarea se migró a su propio repo, público,
+  [github.com/fmq203/TSI-2026-Infra](https://github.com/fmq203/TSI-2026-Infra) — nunca
+  había estado trackeado en el repo del curso (`FQ-TSI-2026`), así que no hizo falta
+  ninguna operación destructiva ahí. `docker-host` clona este repo directo en `/opt`.
+  Bug propio corregido en el camino: `docker-compose.networks.yml` tenía el mapeo
+  `parent: ethN` corrido (y `docker compose up` igual no crea redes sin `services` —
+  las redes se crean con `infra/create-networks.sh`, no con ese yaml).
+- **Confirmado estable (2026-10-01):** los 8 contenedores corriendo sanos —
+  `identity-db`, `keycloak`, `mailserver` (healthy), `cowrie`, `target-app-db`,
+  `target-webapp`, `target-ssh-client`, `suricata` (engine arrancado, 6 threads).
+  Bugs propios corregidos en el camino (ver [[LEARNINGS]]): `nids` solo puede tener
+  **una** red Docker conectada (un contenedor ve cada red propia como `eth0`, sin
+  importar el nombre del lado del host — `eth1` no existía dentro del contenedor, de
+  ahí el "No such device"); `docker-mailserver` con `SSL_TYPE=self-signed` no genera el
+  certificado solo, hace falta `infra/mail/generate-self-signed-cert.sh`.
+- **`siem-hids` (Wazuh) completo y estable (2026-10-02):** manager + indexer +
+  dashboard corriendo, dashboard sirviendo en `:5601` sobre `10.10.90.12`, creando
+  índices de monitoreo en ciclo normal. `docker-host` subido a 9 GB de límite (de 10.7
+  GB libres en el host Proxmox) para que entre cómodo. Bugs propios en el camino (ver
+  [[LEARNINGS]]): `cluster.initial_master_nodes` no es compatible con
+  `discovery.type: single-node`; `wazuh.api.timeout` no es una clave válida en el
+  dashboard 4.9.0.
+- Falta: instalar agente Wazuh en `targets` (HIDS/FIM, RF-04), regla de firewall en
+  OPNsense para que los agentes de VLAN Servidores/Usuarios lleguen al manager en VLAN
+  Gestión (1514/1515), el primer playbook de Active Response (RF-06), `wazo`,
+  `alerting`, y resolver cómo llega tráfico real espejado a Suricata (hoy escucha en su
+  propia red net_dmz vía macvlan — ve tráfico local de ese segmento, pero no es un
+  mirror explícito del router).

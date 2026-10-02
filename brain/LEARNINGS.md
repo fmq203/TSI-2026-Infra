@@ -32,3 +32,36 @@ Append-only: qué funcionó, qué no, y por qué.
   en `Administrator` (rol completo). Para crear/editar bridges de red del nodo no hay
   forma de dar un permiso acotado sin crear un rol custom a mano
   (`POST /access/roles`) — más rápido en este caso fue asignar `Administrator` al token.
+- **Crear/convertir un LXC a privilegiado está bloqueado para CUALQUIER token de API**,
+  sin importar sus permisos (ni siquiera `root@pam` con rol `Administrator` alcanza) —
+  Proxmox devuelve 403 "only allowed for root@pam" pero en realidad excluye tokens por
+  completo, exige una sesión real (ticket/login interactivo). Además `unprivileged` es
+  **read-only** en el config de un LXC existente — no se puede cambiar un contenedor ya
+  creado, hay que destruirlo y recrearlo. La única vía que funciona es `pct create`/
+  `pct set` en una shell real del host (SSH o consola), no la API REST.
+- **`docker-mailserver` necesita un LXC privilegiado** — intenta escribir el sysctl
+  `kernel.domainname`, que un LXC no privilegiado deniega con
+  "OCI runtime create failed... permission denied" al arrancar. Si un stack de Docker
+  falla justo con ese error, es la causa.
+- **Un contenedor solo ve la interfaz de CADA red Docker a la que está conectado, y
+  Docker la nombra `eth0`, `eth1`... adentro del contenedor en el orden de conexión —
+  nunca según el nombre de la interfaz del lado del host** (ej. `eth1` de `docker-host`
+  no existe dentro de un contenedor conectado a una sola red; ahí siempre es `eth0`).
+  Si un servicio necesita capturar/bindear a una interfaz específica (como Suricata),
+  conectarlo a UNA sola red Docker para que el nombre interno sea predecible.
+- **`docker-mailserver` con `SSL_TYPE=self-signed` no genera el certificado solo** —
+  espera encontrarlo ya puesto en el volumen montado en `/tmp/docker-mailserver/ssl/`
+  con nombres exactos (`<hostname>-cert.pem`, `<hostname>-key.pem`,
+  `demoCA/cacert.pem`) y si no están, falla el arranque con "Missing expected file(s)".
+  Ver `infra/mail/generate-self-signed-cert.sh`.
+- **Imágenes con entrypoint que hace `chown` a sus archivos de config montados
+  (ej. `jasonish/suricata`) fallan en loop si esos mounts son `:ro`** — error
+  "Read-only file system" repetido. No montar esos paths como read-only.
+- **Wazuh/OpenSearch (4.9.0):** `cluster.initial_master_nodes` en `opensearch.yml` es
+  incompatible con `discovery.type: single-node` — tirá `IllegalArgumentException` y no
+  arranca. Para un solo nodo, alcanza con `discovery.type: single-node` solo.
+  `wazuh.api.timeout` no es una clave de config válida en el dashboard 4.9.0 (`FATAL
+  Unknown configuration key`). El stack completo (indexer+manager+dashboard) tarda
+  30-60s+ en levantar del todo — un "connection refused" del manager/dashboard hacia el
+  indexer en los primeros segundos es normal, no es necesariamente un bug, hay que
+  esperar y volver a mirar antes de tocar nada.

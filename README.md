@@ -39,16 +39,21 @@ tarea3-infra-red-segura/
 4. `brain/notes/<tema>.md` — si hace falta profundizar en un tema puntual.
 5. `brain/CLAUDE.md` — reglas completas, solo si vas a escribir/actualizar el brain.
 
-## Estado actual (resumen al 2026-10-01 — detalle y fuentes en `brain/MEMORY.md`)
+## Estado actual (resumen al 2026-10-02 — detalle y fuentes en `brain/MEMORY.md`)
 
-- **infra/**: tienen `docker-compose.yml` listo → `identity/`, `mail/`, `targets/`,
-  `honeypot/`. Todavía vacíos: `nids/`, `router-vm/`, `siem-hids/`, `wazo/`,
-  `alerting/`, `soar-thehive-optional/`.
-- **docs/**: ningún entregable de la matriz tiene contenido todavía (todo `☐` en
-  `docs/README.md`), incluyendo la consigna propia y el diagrama de arquitectura.
-- ⚠️ Los hitos sugeridos por la letra H1 (21/09) y H2 (28/09) ya vencieron sin evidencia
-  de avance en el filesystem — a confirmar con el equipo si hay un cronograma interno
-  distinto.
+- **infra/**: red de 4 VLANs completa (`opnrouter` + `docker-host`) y **9 de 9
+  contenedores planeados corriendo**: `identity`, `siem-hids` (Wazuh ×3), `nids`
+  (Suricata), `mail`, `honeypot`, `targets` ×2. Sin construir todavía: `wazo`,
+  `alerting` (no bloquean el freeze del 07/10).
+- Pendiente de infra: agente Wazuh en `targets` (HIDS/FIM real), regla de firewall en
+  OPNsense para que los agentes lleguen al manager, playbooks de Active Response
+  (RF-06), y resolver cómo llega tráfico real espejado a `nids`.
+- **docs/**: `40-consigna-propia.md` y `00-arquitectura.md` tienen borrador completo y
+  actualizado contra la infra real. El resto de la matriz sigue en `☐` en
+  `docs/README.md`.
+- Hitos sugeridos por la letra H1 (21/09) y H2 (28/09) estaban vencidos al 01/10 —
+  retomado con un plan de recuperación (`brain/notes/plan-recuperacion-atraso.md`),
+  en marcha desde entonces.
 
 ## Cómo empezar
 
