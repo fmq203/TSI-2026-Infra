@@ -5,4 +5,3 @@ opensearch.hosts: ["http://wazuh.indexer:9200"]
 opensearch.ssl.verificationMode: none
 opensearch_security.multitenancy.enabled: false
 opensearch.requestHeadersWhitelist: ["securitytenant", "Authorization"]
-wazuh.api.timeout: 20000
