@@ -30,7 +30,8 @@ tarea3-infra-red-segura/
 │   ├── LEARNINGS.md     ← lecciones aprendidas (se completa con el avance)
 │   └── notes/            ← notas puntuales por tema (se crea bajo demanda)
 ├── docs/                ← entregables formales (plantillas ISACA + MCU completadas)
-└── infra/                ← despliegue Docker-first (ver infra/README.md)
+├── infra/                ← despliegue Docker-first (ver infra/README.md)
+└── vagrant/               ← reproducción portable en VirtualBox para el Red Team
 ```
 
 **Protocolo de lectura sugerido:**

@@ -59,6 +59,84 @@ no privilegiado deniega — ver `../brain/decisions.md` y `../brain/LEARNINGS.md
 Todo lo demás — SIEM, HIDS, NIDS, SOAR (Active Response), honeypot, mail, identidad/MFA,
 Wazo, hosts víctima — es contenedor. Eso es lo que se pidió: "lo más posible en Docker".
 
+## Provisioning desde cero (si hay que rearmar todo en otro Proxmox)
+
+Lo que sigue abajo (redes Docker + stacks) asume que **ya existen** `opnrouter` y
+`docker-host`. Si hay que crearlos de cero (otro Proxmox, o si se perdieron), estos son
+los pasos reales que se usaron acá — ver `../brain/decisions.md` para el detalle de cada
+decisión.
+
+### 1. Crear las 4 bridges de red en el host Proxmox
+
+Datacenter → Node → System → Network → Create → Linux Bridge, 4 veces: sin IP, sin
+puerto físico (igual que una bridge interna aislada). Nombres usados acá: `vmbr11`
+(Servidores), `vmbr12` (DMZ), `vmbr1` (Usuarios), `vmbr13` (Gestión) — los nombres no
+importan, lo que importa es que cada una quede aislada (sin `bridge_ports`).
+
+> Para crear/editar bridges del nodo hace falta el rol `Administrator` completo en el
+> token de API que se use (`Sys.Modify`) — ningún rol intermedio de Proxmox lo incluye.
+> Ver `../brain/LEARNINGS.md`.
+
+### 2. Crear la VM del router (OPNsense/pfSense)
+
+VM completa (no LXC — OPNsense es FreeBSD, un LXC solo corre contenedores Linux, es una
+limitación técnica dura, no una elección). Instalar desde el ISO oficial de OPNsense, con
+**5 NICs virtio** en este orden (importa, define qué `vtnetN` es cuál adentro de
+OPNsense):
+
+| # | Bridge | Rol | IP a configurar |
+|---|---|---|---|
+| net0 | `vmbr0` (o la red con salida a internet) | WAN | DHCP o la que corresponda |
+| net1 | `vmbr11` | Servidores (LAN) | 10.10.10.254/24 |
+| net2 | `vmbr12` | DMZ (OPT1) | 10.10.20.254/24 |
+| net3 | `vmbr1` | Usuarios (OPT2) | 10.10.30.254/24 |
+| net4 | `vmbr13` | Gestión (OPT3) | 10.10.90.254/24 |
+
+Configurar NAT (automático con el wizard de OPNsense) y las reglas de firewall de
+`docs/40-consigna-propia.md` §2. Recursos: 2 cores / 2 GB alcanza para este laboratorio.
+
+### 3. Crear `docker-host` (LXC privilegiado)
+
+```bash
+pct create <vmid> local:vztmpl/debian-13-standard_<version>_amd64.tar.zst \
+  --hostname docker-host \
+  --cores 2 --memory 9216 --swap 1024 \
+  --rootfs <storage>:40 \
+  --unprivileged 0 \
+  --features nesting=1,keyctl=1 \
+  --onboot 1 \
+  --net0 name=eth0,bridge=vmbr11,gw=10.10.10.254,ip=10.10.10.5/24 \
+  --net1 name=eth1,bridge=vmbr12,gw=10.10.20.254,ip=10.10.20.5/24 \
+  --net2 name=eth2,bridge=vmbr1,gw=10.10.30.254,ip=10.10.30.5/24 \
+  --net3 name=eth3,bridge=vmbr13,gw=10.10.90.254,ip=10.10.90.5/24
+
+pct start <vmid>
+```
+
+> **Por qué `pct create` y no la API/UI de un token:** crear un LXC **privilegiado**
+> está bloqueado para *cualquier* token de API (incluso uno con rol `Administrator`) —
+> Proxmox exige una sesión real (SSH/consola), por diseño. Por eso este paso es manual,
+> no se puede automatizar vía API. Ver `../brain/LEARNINGS.md`.
+>
+> Privilegiado porque `docker-mailserver` necesita escribir un sysctl
+> (`kernel.domainname`) que un LXC no privilegiado deniega. `unprivileged` es además una
+> opción **read-only** después de creado — si se crea sin privilegios por error, hay que
+> destruir y recrear, no se puede convertir en caliente.
+
+### 4. Instalar Docker y clonar este repo dentro de `docker-host`
+
+```bash
+apt update && apt install -y ca-certificates curl git
+curl -fsSL https://get.docker.com | sh
+systemctl enable --now docker
+
+cd /opt
+git clone <url-de-este-repo>
+cd <repo>/infra
+```
+
+De acá en adelante, seguir "Cómo levantar" más abajo.
+
 ## Stacks y qué RF cubre cada uno
 
 | Carpeta | Servicio | RF que cubre | RAM aprox. |
@@ -115,18 +193,22 @@ cd mail && ./generate-self-signed-cert.sh && cd ..
 #    siem-hids (Wazuh/OpenSearch) necesita este sysctl en docker-host:
 sysctl -w vm.max_map_count=262144
 
-# 3. Por stack, en orden de dependencia
-cd identity      && docker compose up -d && cd ..   # MFA primero (todo lo demás lo puede usar)
-cd siem-hids      && docker compose up -d && cd ..   # Wazuh: manager+indexer+dashboard
-cd nids           && docker compose up -d && cd ..   # Suricata
-cd mail           && docker compose up -d && cd ..
-cd honeypot       && docker compose up -d && cd ..
-cd wazo           && docker compose up -d && cd ..   # no construido todavía
-cd targets        && docker compose up -d && cd ..
-cd alerting       && docker compose up -d && cd ..   # no construido todavía
+# 3. Por stack, en orden de dependencia. OJO: usar rutas absolutas o `;` en vez de `&&`
+#    entre el cd de vuelta — si un `docker compose up` falla, un `&&` corta la cadena y
+#    el siguiente comando se ejecuta en el directorio equivocado (nos pasó varias veces).
+INFRA=/opt/TSI-2026-Infra/infra   # ajustar a donde hayan clonado el repo
+
+cd "$INFRA/identity"   && docker compose up -d   # MFA primero (todo lo demás lo puede usar)
+cd "$INFRA/siem-hids"  && docker compose up -d   # Wazuh: manager+indexer+dashboard
+cd "$INFRA/nids"       && docker compose up -d   # Suricata
+cd "$INFRA/mail"       && docker compose up -d
+cd "$INFRA/honeypot"   && docker compose up -d
+cd "$INFRA/wazo"       && docker compose up -d   # no construido todavía
+cd "$INFRA/targets"    && docker compose up -d
+cd "$INFRA/alerting"   && docker compose up -d   # no construido todavía
 
 # Opcional, solo si sobra RAM:
-cd soar-thehive-optional && docker compose up -d && cd ..
+cd "$INFRA/soar-thehive-optional" && docker compose up -d
 ```
 
 O usar el `Makefile` de este directorio: `make up` / `make down` / `make status`.
