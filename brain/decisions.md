@@ -76,3 +76,30 @@ referencia la anterior.
   de una particularidad de OPNsense, no se va a reproducir en esta copia — queda
   anotado en `vagrant/README.md`.
   **Fuente:** conversación 2026-10-02.
+
+- **2026-10-02** — Revertido lo anterior en parte: para la reproducción VirtualBox se
+  bajó el `config.xml` **real** de `opnrouter` (vía su API,
+  `/api/core/backup/download/this`, con una API key de OPNsense generada por el
+  usuario) y se confirmó que las interfaces son `vtnet0`(WAN)/`vtnet1`(Servidores,
+  LAN)/`vtnet2`(DMZ, OPT1)/`vtnet3`(Usuarios, OPT2)/`vtnet4`(Gestión, OPT3) — virtio,
+  compatible con el adaptador "virtio-net" de VirtualBox. Con esto, la opción
+  **recomendada** para el router del Red Team pasa a ser OPNsense real + importar ese
+  `config.xml` (fiel 1:1), con nftables como fallback 100% automatizado si no quieren
+  instalar OPNsense a mano. El `config.xml` real **no está en el repo** (trae hash de
+  password admin + API keys) — queda local, se distribuye al Red Team por canal
+  privado. `.gitignore` actualizado para no commitearlo por accidente.
+  **Fuente:** conversación 2026-10-02, archivo en
+  `/tmp/.../scratchpad/opnsense-config.xml` (local, no en git).
+
+- **2026-10-02** — Se le dio a Claude acceso **SSH directo al host Proxmox** (key
+  dedicada `claude_proxmox`, no la de uso personal) para ejecutar `pct exec`/`qm`
+  directo en `docker-host` sin pedirle al usuario que relaye cada comando. Terminó
+  usándose específicamente para `pct exec 108 -- curl ...` contra la API de OPNsense
+  (vía `docker-host`, que ya está en la VLAN Servidores) — **no hizo falta** tocar la
+  red del host Proxmox (el plan original de asignarle una IP transitoria a `vmbr11` se
+  descartó, el usuario prefirió no modificar nada del host).
+  **⚠️ PENDIENTE DE SEGURIDAD:** el usuario pidió explícitamente que se le recuerde
+  **revocar esta key de `authorized_keys` del host apenas se termine** este trabajo —
+  no es un acceso que deba quedar permanente. Si una sesión futura ve esta nota y la key
+  sigue activa, avisar y ofrecer revocarla.
+  **Fuente:** conversación 2026-10-02.

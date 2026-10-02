@@ -9,13 +9,55 @@ levante en su propia máquina y la ataque sin depender del Proxmox compartido.
 
 | Pieza | Blue Team (Proxmox) | Acá (VirtualBox) | Por qué |
 |---|---|---|---|
-| Router | OPNsense/pfSense (VM) | VM Linux + nftables | OPNsense no tiene box de Vagrant oficial (FreeBSD, instalación por ISO) — no se puede automatizar razonablemente. El comportamiento (NAT + segmentación + firewall por VLAN) es equivalente, pero no es el mismo producto. |
+| Router | OPNsense/pfSense (VM) | **OPNsense real, importando el `config.xml` real** (opción A) o VM Linux + nftables (opción B, fallback automatizable) | Ver abajo. |
 | docker-host | LXC privilegiado | VM completa | VirtualBox no tiene LXC. Por eso pide más RAM (no hay kernel compartido). |
 | Todo lo demás | Docker Compose | Docker Compose (los mismos `docker-compose.yml`) | Idéntico — por eso el resto de la arquitectura es fiel. |
 
-Si algo de lo que encuentre el Red Team depende específicamente de OPNsense (una regla
-muy particular del panel, un paquete de OPNsense), **no se reproduce acá** — avisar al
-Blue Team para que lo pruebe en su Proxmox real.
+## Router — opción A (recomendada): OPNsense real con el config real importado
+
+Se bajó el `config.xml` real de `opnrouter` vía su API (`/api/core/backup/download/this`).
+**Ese archivo NO está en este repo** (trae el hash de la contraseña de admin y las API
+keys) — pedírselo al Blue Team por un canal privado (no git).
+
+Mapeo de interfaces confirmado (importa limpio si se arma la VM en este mismo orden):
+
+| Interfaz OPNsense | NIC (virtio) | Rol | IP |
+|---|---|---|---|
+| WAN | `vtnet0` | Internet | DHCP |
+| LAN | `vtnet1` | Servidores | 10.10.10.254 |
+| OPT1 | `vtnet2` | DMZ | 10.10.20.254 |
+| OPT2 | `vtnet3` | Usuarios | 10.10.30.254 |
+| OPT3 | `vtnet4` | Gestión | 10.10.90.254 |
+
+Pasos:
+1. Descargar el ISO de OPNsense (opnsense.org/download) e instalarlo en una VM nueva de
+   VirtualBox — instalador rápido (~10 min), casi todo por defecto.
+2. Antes de instalar, agregarle **5 adaptadores de red**, todos tipo
+   **"Paravirtualized Network (virtio-net)"** (no el Intel PRO/1000 por defecto) y **en
+   este orden**: NAT (o Bridged, para que WAN tenga internet real) → Internal Network
+   `vlan_srv` → `vlan_dmz` → `vlan_usr` → `vlan_mgmt` (mismos nombres que usa
+   `docker-host` en el `Vagrantfile` de esta carpeta). El orden importa: define qué
+   `vtnetN` es cuál.
+3. Instalado OPNsense, entrar a su consola (usuario/pass por defecto `installer`/
+   `opnsense`, se pide cambiar) solo para confirmar que asignó las interfaces en el
+   mismo orden — no hace falta configurar nada más ahí.
+4. Entrar a la UI web → **System → Configuration → Backups** (o **Diagnostics → Config
+   History**, según versión) → **Restore configuration** → subir el `config.xml` que te
+   pasó el Blue Team.
+5. Reiniciar. Debería quedar con las mismas 4 VLANs, mismas reglas de firewall y mismo
+   NAT que la `opnrouter` real.
+
+Si algún `vtnetN` no coincide (quedó una interfaz sin red real detrás), reasignar a mano
+en **Interfaces → Assignments** — 2 minutos, no bloquea nada más.
+
+## Router — opción B (fallback 100% automatizado): nftables
+
+Si no querés/podés instalar OPNsense a mano, `vagrant up` sigue levantando una VM Linux
+con nftables en vez de OPNsense — ver `Vagrantfile`/`provision-router.sh`. Mismo
+comportamiento de red (NAT + segmentación por VLAN), pero si algún hallazgo del Red Team
+depende de una particularidad específica de OPNsense (un paquete, una regla del panel),
+**no se va a reproducir con esta opción** — avisar al Blue Team para validarlo en su
+Proxmox real.
 
 ## Requisitos
 

@@ -1,2 +1,7 @@
 .env
 infra/*/ssl/
+
+# Backups de config.xml de OPNsense (traen hash de contraseña admin + API keys) —
+# nunca van al repo público. Distribuir al Red Team por un canal privado.
+**/opnsense-config*.xml
+vagrant/*.xml
