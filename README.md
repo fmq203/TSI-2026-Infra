@@ -89,7 +89,7 @@ Cómo llegar a ellas desde tu máquina: `vagrant/README.md` → "Cómo entrar a 
 | Servicio | Dirección | Credenciales por defecto (`.env.example`) |
 |---|---|---|
 | Router (gateway de cada VLAN) | `10.10.X.254` | OPNsense: las que elijas al instalar |
-| Wazuh dashboard | `http://10.10.90.12:5601` | *sin verificar si pide login*. API: `wazuh-wui` / `WAZUH_API_PASSWORD` |
+| Wazuh dashboard | `http://10.10.90.12:5601` | sin login (plugin de seguridad desactivado, ver `infra/siem-hids/docker-compose.yml`). API: `wazuh-wui` / `WAZUH_API_PASSWORD` |
 | Keycloak | `http://10.10.90.20:8080` | `admin` / `changeme` |
 | App de préstamos (DVWA) | `http://10.10.10.10` | `admin` / `password` |
 | Host SSH víctima | `ssh -p 2222 labuser@10.10.30.10` | `labuser` / `changeme_intentionally_weak` |

@@ -3,5 +3,7 @@ server.port: 5601
 server.ssl.enabled: false
 opensearch.hosts: ["http://wazuh.indexer:9200"]
 opensearch.ssl.verificationMode: none
-opensearch_security.multitenancy.enabled: false
-opensearch.requestHeadersWhitelist: ["securitytenant", "Authorization"]
+# Sin claves `opensearch_security.*`: el plugin de seguridad del dashboard se borra al
+# arrancar (ver docker-compose.yml) y esas claves pasarían a ser desconocidas → el
+# dashboard no arranca ("FATAL Unknown configuration key").
+opensearch.requestHeadersAllowlist: ["Authorization"]

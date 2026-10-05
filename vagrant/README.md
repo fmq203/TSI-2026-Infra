@@ -76,7 +76,7 @@ vagrant ssh router -- -N -L 5601:10.10.90.12:5601 -L 8080:10.10.90.20:8080 -L 80
 
 | Servicio | En tu navegador | Credenciales por defecto |
 |---|---|---|
-| Wazuh dashboard | <http://localhost:5601> (tarda ~1 min en levantar) | *sin verificar si pide login* (el indexer corre sin plugin de seguridad). API: `wazuh-wui` / `WAZUH_API_PASSWORD` de `infra/siem-hids/.env` |
+| Wazuh dashboard | <http://localhost:5601> (tarda ~1 min en levantar) | sin login (plugin de seguridad desactivado). API: `wazuh-wui` / `WAZUH_API_PASSWORD` de `infra/siem-hids/.env` |
 | Keycloak (admin) | <http://localhost:8080> | `admin` / `changeme`. *No verificado:* Keycloak está configurado con hostname `auth.lab.local`; si redirige ahí, agregar `127.0.0.1 auth.lab.local` al archivo hosts de tu máquina y entrar por `http://auth.lab.local:8080` |
 | App de préstamos (DVWA) | <http://localhost:8081> | `admin` / `password` (DVWA por defecto; la primera vez pide "Create / Reset Database") |
 

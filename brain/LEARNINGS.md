@@ -74,3 +74,10 @@ Append-only: qué funcionó, qué no, y por qué.
   30-60s+ en levantar del todo — un "connection refused" del manager/dashboard hacia el
   indexer en los primeros segundos es normal, no es necesariamente un bug, hay que
   esperar y volver a mirar antes de tocar nada.
+- **2026-10-05 — Login del dashboard de Wazuh imposible con el indexer sin seguridad.**
+  Con `DISABLE_SECURITY_PLUGIN=true` en el indexer, el dashboard igual muestra su login
+  (plugin `securityDashboards`) y rechaza cualquier usuario, incluido `admin`/`admin`:
+  no hay backend de seguridad contra el cual validar. Arreglo: el `entrypoint` del
+  dashboard borra `plugins/securityDashboards` antes de arrancar, y se sacan del
+  `opensearch_dashboards.yml` las claves `opensearch_security.*` (sin el plugin pasan a
+  ser desconocidas y el dashboard no arranca). Resultado: web UI sin login.

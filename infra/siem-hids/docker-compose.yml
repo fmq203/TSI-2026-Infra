@@ -85,9 +85,16 @@ services:
     image: wazuh/wazuh-dashboard:4.9.0
     container_name: wazuh.dashboard
     restart: unless-stopped
-    ports:
-      - "443:5601"
+    # El indexer corre SIN plugin de seguridad, así que el login del dashboard no tiene
+    # contra qué validar y rechaza cualquier usuario. Se borra el plugin de seguridad del
+    # dashboard antes de arrancar: el web UI entra directo, sin login (simplificación de
+    # laboratorio, justificar como N/A en el Excel MCU). Con `;` y no `&&`: si el rm falla,
+    # el dashboard arranca igual que antes en vez de no arrancar.
+    entrypoint: ["/bin/sh", "-c", "rm -rf /usr/share/wazuh-dashboard/plugins/securityDashboards; exec /entrypoint.sh"]
+    # Sin `ports:`: con red macvlan no aplican, se entra directo a 10.10.90.12:5601.
     environment:
+      # Credenciales que el dashboard le manda al indexer; el indexer sin seguridad las
+      # ignora. NO son un usuario de login del web UI (no hay login).
       - INDEXER_USERNAME=admin
       - INDEXER_PASSWORD=admin
       - WAZUH_API_URL=https://wazuh.manager
