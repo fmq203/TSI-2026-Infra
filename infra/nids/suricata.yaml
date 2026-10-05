@@ -66,8 +66,10 @@ default-rule-path: /etc/suricata/rules
 rule-files:
   - local.rules
 
-classification-file: /etc/suricata/classification.config
-reference-config-file: /etc/suricata/reference.config
+# Sin classification-file/reference-config-file: Suricata usa sus rutas por defecto (en
+# versiones nuevas ya no están en /etc/suricata/, y si no encuentra el archivo descarta
+# toda regla con `classtype` sin cortar el arranque — por eso las reglas no disparaban).
+# Las reglas propias no usan classtype; la prioridad la llevan explícita.
 
 detect-engine:
   - profile: medium
