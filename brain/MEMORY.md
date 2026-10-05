@@ -93,5 +93,6 @@ Todo contenedor nuevo con IP fija: el IPAM de Docker no sabe que `.5` es de
 
 Lista mantenida en `README.md` → "Pendientes" (infra, documentación, seguridad) y estado
 por día en [[plan-recuperacion-atraso]]. Lo más urgente para la demo: llevar los logs de
-Suricata y Cowrie a Wazuh, agente Wazuh en `targets`, MFA en Keycloak y los playbooks de
-Active Response. Y probar `vagrant up` de punta a punta en una máquina física.
+Cowrie a Wazuh (Suricata ya conectado el 2026-10-05), agente Wazuh en `targets`, MFA en
+Keycloak y los playbooks de Active Response. Y probar `vagrant up` de punta a punta en
+una máquina física.
