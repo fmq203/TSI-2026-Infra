@@ -72,7 +72,7 @@ redes Docker son macvlan, creadas por `infra/create-networks.sh`.
 | mail | `mailserver` | `10.10.20.20` |
 | honeypot | `cowrie` | `10.10.20.30` |
 | targets | `target-webapp` (DVWA) / `target-app-db` | `10.10.10.10` / `.11` |
-| targets | `target-ssh-client` | `10.10.30.10` |
+| targets | `target-ssh-client` (imagen propia `ssh-victim/`, SSH 2222 + agente Wazuh `ssh-client`) | `10.10.30.10` |
 | (futuro) | `wazo` / `alerting` | `10.10.20.40` / `10.10.90.40` (reservadas) |
 
 Todo contenedor nuevo con IP fija: el IPAM de Docker no sabe que `.5` es de

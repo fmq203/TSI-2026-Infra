@@ -1,0 +1,20 @@
+<!--
+  Reglas locales del laboratorio. configure-manager.sh copia este archivo a
+  /var/ossec/etc/rules/local_rules.xml del manager (el repo es la fuente de verdad).
+  IDs 100000-120000 = rango reservado por Wazuh para reglas de usuario.
+-->
+<group name="local,suricata,cu01,">
+
+  <!-- CU-01: las firmas propias de Suricata (SIDs 1000001-1000005, nids/rules/local.rules)
+       llegan como regla 86601 nivel 3. Se suben a nivel 10 para que cuenten como
+       incidente: aparecen como "high" en el dashboard y disparan el mail al SOC. -->
+  <rule id="100100" level="10">
+    <if_sid>86601</if_sid>
+    <field name="alert.signature_id" type="pcre2">^100000[1-5]$</field>
+    <description>CU-01 Reconocimiento contra la red interna: $(alert.signature) desde $(src_ip)</description>
+    <mitre>
+      <id>T1046</id>
+    </mitre>
+  </rule>
+
+</group>

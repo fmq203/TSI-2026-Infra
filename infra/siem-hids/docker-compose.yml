@@ -76,7 +76,7 @@ services:
       - wazuh_agentless:/var/ossec/agentless
       - wazuh_wodles:/var/ossec/wodles
       # eve.json de Suricata (volumen del stack nids/), solo lectura. El manager lo lee
-      # gracias a enable-suricata-logs.sh (agrega el <localfile> a ossec.conf).
+      # gracias a configure-manager.sh (agrega el <localfile> a ossec.conf).
       - suricata_logs:/var/log/suricata:ro
     depends_on:
       - wazuh.indexer

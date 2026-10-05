@@ -22,10 +22,11 @@ prereqs:
 up: networks prereqs
 	@for s in $(STACKS); do \
 		echo "==> levantando $$s"; \
-		(cd $$s && docker compose up -d) || exit 1; \
+		(cd $$s && docker compose up -d --build) || exit 1; \
 	done
-	@echo "==> conectando logs de Suricata a Wazuh"
-	./siem-hids/enable-suricata-logs.sh
+	@echo "==> configurando Wazuh (Suricata, reglas locales, active response, mail)"
+	./siem-hids/configure-manager.sh
+	./mail/ensure-accounts.sh
 
 down:
 	@for s in $(STACKS); do \

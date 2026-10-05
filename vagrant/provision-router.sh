@@ -4,6 +4,7 @@
 #   - Internet -> DMZ: solo puertos publicados (mail, wazo, honeypot)
 #   - Usuarios -> Servidores: solo HTTP/HTTPS a la app de préstamos
 #   - Servidores/Usuarios -> Gestión: solo agente Wazuh (1514/1515)
+#   - Gestión -> DMZ: solo SMTP (25) del manager de Wazuh al mailserver
 #   - Todo lo demás entre VLANs internas: denegado (MFA/Keycloak lo maneja a nivel
 #     aplicación, esto es solo el filtrado de red)
 set -ex
@@ -56,6 +57,9 @@ table inet filter {
     # Servidores/Usuarios -> Gestión: solo agente Wazuh
     iifname { "$IF_SRV", "$IF_USR" } oifname "$IF_MGMT" tcp dport { 1514, 1515 } accept
     iifname { "$IF_SRV", "$IF_USR" } oifname "$IF_MGMT" udp dport { 1514 } accept
+
+    # Gestión -> DMZ: el manager de Wazuh manda los mails de alerta al mailserver
+    iifname "$IF_MGMT" oifname "$IF_DMZ" tcp dport { 25 } accept
 
     # Resto de tráfico entre VLANs internas: denegado (política por defecto = drop)
   }

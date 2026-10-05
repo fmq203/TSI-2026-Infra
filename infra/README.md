@@ -216,10 +216,11 @@ done
 cd "$INFRA/identity"   && docker compose up -d   # MFA primero (todo lo demás lo puede usar)
 cd "$INFRA/nids"       && docker compose up -d   # Suricata (antes que Wazuh: le monta su volumen de logs)
 cd "$INFRA/siem-hids"  && docker compose up -d   # Wazuh: manager+indexer+dashboard
-"$INFRA/siem-hids/enable-suricata-logs.sh"       # Wazuh lee el eve.json de Suricata
+"$INFRA/siem-hids/configure-manager.sh"          # Suricata, reglas locales, active response, mail
 cd "$INFRA/mail"       && docker compose up -d
+"$INFRA/mail/ensure-accounts.sh"                # casilla soc@lab.local
 cd "$INFRA/honeypot"   && docker compose up -d
-cd "$INFRA/targets"    && docker compose up -d
+cd "$INFRA/targets"    && docker compose up -d --build   # ssh-client es imagen propia (ssh-victim/)
 # wazo / alerting / soar-thehive-optional: no construidos todavía
 ```
 
@@ -234,11 +235,14 @@ cd "$INFRA/targets"    && docker compose up -d
 2. ~~Stacks identity, siem-hids, nids, mail, honeypot, targets~~ — construidos y
    probados. Reglas de Suricata escritas para CU-01 (`nids/rules/local.rules`). Faltan
    los decoders/reglas de Wazuh para CU-02..CU-05.
-3. **Agente Wazuh en `targets`** (HIDS/FIM real, RF-04) — no instalado todavía. El
-   router tiene que dejar pasar Servidores/Usuarios → Gestión puertos 1514/1515: el
-   router nftables de `vagrant/` ya lo permite; en OPNsense hay que crear la regla.
+3. **Agente Wazuh en `targets`** (HIDS/FIM real, RF-04) — instalado en `ssh-client`
+   (imagen `targets/ssh-victim/`, CU-02: fuerza bruta → Active Response `firewall-drop`
+   → mail a `soc@lab.local`), **sin verificar todavía**. Falta en `webapp` (CU-03). El
+   router tiene que dejar pasar Servidores/Usuarios → Gestión 1514/1515 y Gestión → DMZ
+   25 (mail): el router nftables de `vagrant/` ya lo permite; en OPNsense hay que crear
+   las reglas.
 4. **Logs de Cowrie → Wazuh**: Suricata ya está conectado (el volumen `nids_suricata_logs`
-   se monta en `wazuh.manager` y `siem-hids/enable-suricata-logs.sh` agrega el
+   se monta en `wazuh.manager` y `siem-hids/configure-manager.sh` agrega el
    `<localfile>` a `ossec.conf`). Falta lo mismo para `cowrie_logs` del honeypot. Ojo:
    Suricata hoy probablemente solo ve el tráfico dirigido a su IP (`10.10.20.50`) — ver
    el punto 7.

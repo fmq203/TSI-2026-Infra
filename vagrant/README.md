@@ -146,6 +146,41 @@ docker exec wazuh.manager grep -c suricata /var/ossec/logs/alerts/alerts.json   
 docker exec wazuh.manager curl -s "http://wazuh.indexer:9200/_cat/indices/wazuh-alerts*?v"   # ¿llegó al indexer?
 ```
 
+## Probar la respuesta automática (CU-02: fuerza bruta SSH)
+
+Cadena: muchos logins SSH fallidos contra `target-ssh-client` (`10.10.30.10:2222`) → el
+agente Wazuh de ese contenedor manda su `auth.log` → reglas estándar de sshd **5763** /
+**5712** (nivel 10) → **Active Response `firewall-drop`**: el agente agrega un `DROP` de
+iptables para la IP atacante durante 10 min → el manager manda un mail a
+`soc@lab.local`. (Construido 2026-10-05; **no verificado todavía de punta a punta**.)
+
+Antes de atacar, verificar que el agente quedó enrolado y conectado:
+
+```bash
+docker exec wazuh.manager /var/ossec/bin/agent_control -l    # debe listar "ssh-client", Active
+```
+
+Si no aparece: el router no deja pasar Usuarios → Gestión 1514/1515 (en nftables ya está;
+en OPNsense ver la tabla de abajo), o mirar `docker logs target-ssh-client`.
+
+Ataque desde el router (8+ contraseñas incorrectas en menos de 2 min alcanzan; la
+contraseña real está en `infra/targets/.env`):
+
+```bash
+vagrant ssh router -- "sudo apt-get install -y -qq sshpass && for i in \$(seq 1 12); do sshpass -p incorrecta\$i ssh -p 2222 -o StrictHostKeyChecking=no labuser@10.10.30.10 true; done"
+```
+
+(También sirve `hydra` desde una VM en `vlan_usr`.) Lo que se tiene que ver:
+
+```bash
+docker exec target-ssh-client iptables -L INPUT -n          # DROP con la IP atacante
+docker exec target-ssh-client tail /var/ossec/logs/active-responses.log
+docker exec wazuh.manager grep -E '"id":"(5763|5712)"' /var/ossec/logs/alerts/alerts.json | tail -1
+```
+
+En el dashboard: **Threat Hunting**, filtro `rule.id: 5763`, y la fila de Active Response
+(`rule.id: 651`, "Host Blocked by firewall-drop"). A los 10 min el bloqueo se levanta solo.
+
 ## Router: nftables (por defecto) u OPNsense (manual)
 
 `vagrant up` usa un router **Linux con nftables**, 100% automático. La letra sugiere
@@ -184,7 +219,8 @@ Vagrant para OPNsense, así que es manual (~30 min):
    | WAN | Pass | UDP | `10.10.20.40` | 5060 (cuando exista Wazo) |
    | OPT2 (Usuarios) | Pass | TCP | `10.10.10.10` | 80, 443 |
    | OPT2 (Usuarios) | Pass | TCP | `10.10.90.10` | 1514, 1515 (agente Wazuh) |
-   | OPT1, OPT3 | — | — | — | sin reglas: solo responden, no inician (igual que nftables) |
+   | OPT3 (Gestión) | Pass | TCP | `10.10.20.20` | 25 (mails de alerta de Wazuh) |
+   | OPT1 (DMZ) | — | — | — | sin reglas: solo responde, no inicia (igual que nftables) |
 
    Es el mismo criterio de `../docs/40-consigna-propia.md` §2 y de `provision-router.sh`.
 

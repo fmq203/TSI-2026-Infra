@@ -22,11 +22,11 @@ se probó de punta a punta en una máquina física.
 | Wazuh (siem-hids) | ✅ manager + indexer + dashboard |
 | Logs de Suricata → Wazuh | ✅ 2026-10-05 — CU-01 (ping + escaneo SYN) visible en el dashboard |
 | Logs de Cowrie → Wazuh | ❌ pendiente |
-| Agente Wazuh en `targets` | ❌ pendiente (+ regla en el router si es OPNsense) |
+| Agente Wazuh en `targets` | 🔶 2026-10-05 en `ssh-client` (imagen `targets/ssh-victim/`), sin verificar; falta `webapp` (CU-03) |
 | Ataque 1 (recon) documentado | 🔶 detección funcionando end-to-end; falta escribirlo con evidencia (capturas) en `docs/evidencias/` |
-| Playbook Active Response + ataque 2 (SSH) | ❌ pendiente |
+| Playbook Active Response + ataque 2 (SSH) | 🔶 2026-10-05 construido (5712/5763 → firewall-drop + mail a soc@lab.local), sin verificar |
 | Ataque 3 (webshell) | ❌ pendiente |
-| `alerting` (2º canal) | ❌ no construido |
+| `alerting` (2º canal) | ✂️ candidato a recorte (docente habilitó recortar, ver [[decisions]] 2026-10-05): mail + dashboard |
 | Docs ISACA (02, 03, 04, 06, 07, 09...) y Excel MCU | ❌ pendientes |
 | Bitácora | ❌ sin empezar — ver "Regla no negociable" abajo |
 

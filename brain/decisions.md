@@ -133,3 +133,27 @@ referencia la anterior.
   los scripts, IP fija para Keycloak (`.20`), su DB (`.21`) y la DB de la app (`.11`), y
   guía para configurar OPNsense a mano sin depender de un `config.xml` ajeno.
   **Fuente:** conversación 2026-10-02.
+
+- **2026-10-05** — **El docente habilita recortar alcance** cuando algo sea muy complejo
+  o costoso de implementar, a criterio del equipo (consulta de clase). Criterio adoptado:
+  se prioriza que la cadena **detección → respuesta automática → notificación** funcione
+  de punta a punta en CU-01/CU-02/CU-03 (es lo que se audita el 14/10), y lo demás se
+  recorta con justificación escrita (N/A en el Excel MCU), no se omite en silencio.
+  Candidatos a recorte: Wazo (VoIP), `alerting` como 2º canal propio (alcanza con mail +
+  dashboard), SOAR TheHive/Cortex (la respuesta la hace Wazuh Active Response), espejo
+  de tráfico hacia Suricata (ve solo el tráfico dirigido a su IP en la DMZ), TLS interno
+  del indexer. Cada recorte se confirma cuando se escriba el doc/Excel correspondiente.
+  **Fuente:** conversación 2026-10-05.
+
+- **2026-10-05** — **CU-02 (fuerza bruta SSH) se resuelve con Wazuh Active Response en
+  el propio host víctima.** El `ssh-client` de `targets/` pasa de la imagen
+  `linuxserver/openssh-server` (Alpine, sin paquete oficial de agente) a una imagen
+  propia Debian (`targets/ssh-victim/`) con OpenSSH + rsyslog + agente Wazuh 4.9.0. Las
+  reglas estándar de sshd (5712/5763) disparan `firewall-drop`, que bloquea la IP
+  atacante con iptables dentro del contenedor (`cap_add: NET_ADMIN`) por 10 min.
+  Alternativa descartada: bloquear en el router (OPNsense vía API desde el manager) —
+  más realista pero exige guardar credenciales de API del router en el SIEM y no sirve
+  igual para el router nftables de VirtualBox. Notificación: el manager manda mail
+  (alertas nivel ≥ 10) a `soc@lab.local` en el mailserver de la DMZ. CU-01 pasa a nivel
+  10 con una regla local (100100) para que también notifique.
+  **Fuente:** conversación 2026-10-05.

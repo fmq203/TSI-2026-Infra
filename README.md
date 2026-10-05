@@ -60,14 +60,17 @@ Claude Code solo; con otra IA, pasarle primero `CLAUDE.md`, este README y
    1000005/1000001 en Suricata → regla 86601 en Wazuh → visibles en el dashboard).
    Falta el honeypot. Suricata solo ve tráfico dirigido a su IP (`10.10.20.50`), y el
    router tiene que dejar pasar al atacante hasta ahí (ver `brain/LEARNINGS.md`).
-2. **Agente Wazuh en `targets`** (HIDS/FIM, RF-04) + regla de firewall
-   Servidores/Usuarios → Gestión puertos 1514/1515 (en nftables ya está; en OPNsense hay
-   que crearla).
+2. **Verificar CU-02** (construido 2026-10-05, sin probar): agente Wazuh en
+   `target-ssh-client` → fuerza bruta SSH → Active Response `firewall-drop` → mail a
+   `soc@lab.local`. Cómo probarlo: `vagrant/README.md` → "Probar la respuesta
+   automática". En OPNsense hacen falta las reglas Usuarios → Gestión 1514/1515 y
+   Gestión → DMZ 25. Después: agente en `webapp` para CU-03 (FIM).
 3. **MFA en Keycloak** (TOTP/WebAuthn, RF-12): el contenedor corre, falta configurar
    realm, usuarios y MFA.
-4. **Playbooks de Active Response** de Wazuh para los 3 casos de RF-06.
+4. **Active Response** para CU-03 (webshell): el de CU-02 ya está.
 5. Decidir cómo le llega tráfico espejado a Suricata (hoy ve solo el tráfico de la DMZ).
-6. `wazo` y `alerting` (no bloquean el 07/10).
+6. `wazo` y `alerting`: candidatos a recorte con justificación (el docente lo habilitó,
+   ver `brain/decisions.md` 2026-10-05).
 
 Detalle técnico de cada uno en `infra/README.md` → "Qué falta".
 
@@ -97,7 +100,7 @@ Cómo llegar a ellas desde tu máquina: `vagrant/README.md` → "Cómo entrar a 
 | App de préstamos (DVWA) | `http://10.10.10.10` | `admin` / `password` |
 | Host SSH víctima | `ssh -p 2222 labuser@10.10.30.10` | `labuser` / `changeme_intentionally_weak` |
 | Honeypot Cowrie | `10.10.20.30` puertos 2222 / 2223 | cualquiera (es una trampa) |
-| Mail | `10.10.20.20` (25, 587, 993) | crear la cuenta: `docker exec -it mailserver setup email add alertas@lab.local <pass>` |
+| Mail | `10.10.20.20` (25, 587, 993) | casilla del SOC `soc@lab.local` (la crea `make up`, contraseña en `infra/mail/.env`): recibe las alertas de Wazuh nivel ≥ 10 |
 
 ## Reglas del repo
 

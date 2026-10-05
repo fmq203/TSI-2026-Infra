@@ -1,6 +1,6 @@
 # mail/ — docker-mailserver: SMTP propio para el canal de alertas por email (RF-07)
 # Un solo contenedor (Postfix+Dovecot+rspamd), mucho más liviano que Mailu (7+ contenedores).
-# El SIEM/SOAR envía las alertas contra este servidor (ver siem-hids/.env: SMTP_HOST).
+# El SIEM/SOAR envía las alertas contra este servidor (siem-hids/configure-manager.sh: smtp_server 10.10.20.20, puerto 25).
 
 services:
   mailserver:
