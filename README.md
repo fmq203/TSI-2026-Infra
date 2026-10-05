@@ -55,8 +55,9 @@ Claude Code solo; con otra IA, pasarle primero `CLAUDE.md`, este README y
 
 ### Infra (para la demo de la auditoría)
 
-1. **Logs de Suricata y Cowrie → Wazuh.** Hoy cada uno escribe en su volumen y el SIEM
-   no los ve: sin esto no hay correlación (RF-05) ni se ve el CU-01 en el dashboard.
+1. **Logs de Cowrie → Wazuh.** Suricata ya está conectado a Wazuh (2026-10-05); falta
+   el honeypot. Además Suricata probablemente solo ve tráfico dirigido a su IP
+   (`10.10.20.50`): para la demo de CU-01, escanear esa IP o toda la DMZ.
 2. **Agente Wazuh en `targets`** (HIDS/FIM, RF-04) + regla de firewall
    Servidores/Usuarios → Gestión puertos 1514/1515 (en nftables ya está; en OPNsense hay
    que crearla).

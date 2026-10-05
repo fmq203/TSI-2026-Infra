@@ -214,8 +214,9 @@ for s in identity siem-hids nids mail honeypot targets; do
 done
 
 cd "$INFRA/identity"   && docker compose up -d   # MFA primero (todo lo demás lo puede usar)
+cd "$INFRA/nids"       && docker compose up -d   # Suricata (antes que Wazuh: le monta su volumen de logs)
 cd "$INFRA/siem-hids"  && docker compose up -d   # Wazuh: manager+indexer+dashboard
-cd "$INFRA/nids"       && docker compose up -d   # Suricata
+"$INFRA/siem-hids/enable-suricata-logs.sh"       # Wazuh lee el eve.json de Suricata
 cd "$INFRA/mail"       && docker compose up -d
 cd "$INFRA/honeypot"   && docker compose up -d
 cd "$INFRA/targets"    && docker compose up -d
@@ -236,10 +237,11 @@ cd "$INFRA/targets"    && docker compose up -d
 3. **Agente Wazuh en `targets`** (HIDS/FIM real, RF-04) — no instalado todavía. El
    router tiene que dejar pasar Servidores/Usuarios → Gestión puertos 1514/1515: el
    router nftables de `vagrant/` ya lo permite; en OPNsense hay que crear la regla.
-4. **Logs de Suricata y Cowrie → Wazuh**: hoy `nids` escribe `eve.json` en el volumen
-   `suricata_logs` y `honeypot` en `cowrie_logs`, y nadie los lee. Hace falta montarlos
-   en `wazuh.manager` (o un agente/forwarder) y declararlos como `<localfile>` en
-   `ossec.conf`. Sin esto no hay correlación (RF-05) ni se ve el CU-01 en el dashboard.
+4. **Logs de Cowrie → Wazuh**: Suricata ya está conectado (el volumen `nids_suricata_logs`
+   se monta en `wazuh.manager` y `siem-hids/enable-suricata-logs.sh` agrega el
+   `<localfile>` a `ossec.conf`). Falta lo mismo para `cowrie_logs` del honeypot. Ojo:
+   Suricata hoy probablemente solo ve el tráfico dirigido a su IP (`10.10.20.50`) — ver
+   el punto 7.
 5. **MFA dentro de Keycloak** (TOTP/WebAuthn, RF-12): el contenedor corre pero no hay
    realm/usuarios/MFA configurados todavía.
 6. **Playbooks de Active Response** (scripts) para los 3 casos de RF-06.

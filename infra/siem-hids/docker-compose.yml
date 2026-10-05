@@ -75,6 +75,9 @@ services:
       - wazuh_active_response:/var/ossec/active-response/bin
       - wazuh_agentless:/var/ossec/agentless
       - wazuh_wodles:/var/ossec/wodles
+      # eve.json de Suricata (volumen del stack nids/), solo lectura. El manager lo lee
+      # gracias a enable-suricata-logs.sh (agrega el <localfile> a ossec.conf).
+      - suricata_logs:/var/log/suricata:ro
     depends_on:
       - wazuh.indexer
     networks:
@@ -116,6 +119,10 @@ networks:
     external: true
 
 volumes:
+  # Lo crea el stack nids/ (proyecto "nids") → hay que levantar nids ANTES que siem-hids.
+  suricata_logs:
+    external: true
+    name: nids_suricata_logs
   wazuh_indexer_data:
   wazuh_api_configuration:
   wazuh_etc:
