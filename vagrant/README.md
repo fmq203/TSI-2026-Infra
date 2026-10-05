@@ -103,6 +103,49 @@ Desde `vlan_wan` el router solo deja pasar lo que una DMZ real publicaría: mail
 (`10.10.20.20` puertos 25/587/993), honeypot (`10.10.20.30` puertos 2222/2223) y Wazo
 (UDP 5060, cuando exista).
 
+## Probar la detección (CU-01: reconocimiento)
+
+Cadena probada en el despliegue de referencia el 2026-10-05: escaneo → firma propia de
+Suricata (`infra/nids/rules/local.rules`) → regla 86601 de Wazuh → alerta en el dashboard
+(**Threat Hunting**, filtro `rule.groups: suricata`, rango "Today"; aparecen como *low
+severity*, nivel 3).
+
+Dos cosas que hay que saber antes de probar (detalle en `../brain/LEARNINGS.md`):
+
+- **Suricata solo ve el tráfico dirigido a su propia IP, `10.10.20.50`** (es un
+  contenedor macvlan más en la DMZ, no recibe un espejo del tráfico). Atacar esa IP.
+- **El firewall tiene que dejar pasar el ataque hasta ahí.** Desde `vlan_wan` el router
+  solo deja pasar los puertos publicados de la DMZ: un `ping` o un `nmap -sS -p 1-1000`
+  no llegan y Suricata no ve casi nada (pasó lo mismo con OPNsense en el despliegue de
+  referencia y llevó un buen rato darse cuenta).
+
+La forma más simple: atacar **desde el router** (su tráfico propio no pasa por el
+filtro), desde la carpeta `vagrant/`:
+
+```bash
+vagrant ssh router -- "sudo apt-get install -y -qq nmap && ping -c 20 -i 0.2 10.10.20.50 && sudo nmap -sS -p 1-1000 10.10.20.50"
+```
+
+Desde una VM atacante en `vlan_wan` (más realista, como un atacante de internet), usar
+escaneos que entren por los puertos publicados:
+
+```bash
+sudo nmap -sN -p 25,587,993 10.10.20.50    # NULL → regla 1000002
+sudo nmap -sF -p 25,587,993 10.10.20.50    # FIN  → regla 1000003
+```
+
+Si usás OPNsense como router y atacás desde otra VLAN, agregá una regla temporal de paso
+hacia `10.10.20.50` (y borrala después).
+
+Verificar en orden si no aparece nada (todo con `vagrant ssh docker-host`, luego `sudo -i`):
+
+```bash
+docker exec suricata grep -c '"event_type":"alert"' /var/log/suricata/eve.json   # ¿Suricata detectó?
+docker exec suricata grep '"src_ip":"<IP atacante>"' /var/log/suricata/eve.json | tail -3   # ¿llegó el tráfico, a qué puertos?
+docker exec wazuh.manager grep -c suricata /var/ossec/logs/alerts/alerts.json    # ¿Wazuh la procesó?
+docker exec wazuh.manager curl -s "http://wazuh.indexer:9200/_cat/indices/wazuh-alerts*?v"   # ¿llegó al indexer?
+```
+
 ## Router: nftables (por defecto) u OPNsense (manual)
 
 `vagrant up` usa un router **Linux con nftables**, 100% automático. La letra sugiere
