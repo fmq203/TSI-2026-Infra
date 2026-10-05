@@ -78,6 +78,8 @@ services:
       # eve.json de Suricata (volumen del stack nids/), solo lectura. El manager lo lee
       # gracias a configure-manager.sh (agrega el <localfile> a ossec.conf).
       - suricata_logs:/var/log/suricata:ro
+      - nids_suricata_logs:/external/suricata:ro
+      - honeypot_cowrie_logs:/external/cowrie:ro
     depends_on:
       - wazuh.indexer
     networks:
@@ -133,3 +135,8 @@ volumes:
   wazuh_active_response:
   wazuh_agentless:
   wazuh_wodles:
+  nids_suricata_logs:
+    external: true
+
+  honeypot_cowrie_logs:
+    external: true

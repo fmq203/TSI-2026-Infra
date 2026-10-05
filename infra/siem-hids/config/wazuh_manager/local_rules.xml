@@ -18,3 +18,14 @@
   </rule>
 
 </group>
+<group name="cowrie,honeypot,">
+
+  <!-- Cowrie: intento de autenticación SSH fallido -->
+  <rule id="100110" level="8">
+    <decoded_as>json</decoded_as>
+    <field name="eventid">cowrie.login.failed</field>
+    <description>Cowrie Honeypot - intento de inicio de sesión SSH fallido</description>
+    <group>authentication_failed,ssh,honeypot,</group>
+  </rule>
+
+</group>

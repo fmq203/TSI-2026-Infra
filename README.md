@@ -55,23 +55,16 @@ Claude Code solo; con otra IA, pasarle primero `CLAUDE.md`, este README y
 
 ### Infra (para la demo de la auditoría)
 
-1. **Logs de Cowrie → Wazuh.** Suricata ya está conectado a Wazuh y **CU-01 se ve de
-   punta a punta** (2026-10-05: ping y escaneo SYN desde la VLAN Servidores → alertas
-   1000005/1000001 en Suricata → regla 86601 en Wazuh → visibles en el dashboard).
-   Falta el honeypot. Suricata solo ve tráfico dirigido a su IP (`10.10.20.50`), y el
-   router tiene que dejar pasar al atacante hasta ahí (ver `brain/LEARNINGS.md`).
-2. **▶ Siguiente paso — verificar CU-02** (construido 2026-10-05, sin probar; pasos en
-   `brain/notes/plan-recuperacion-atraso.md`): agente Wazuh en
-   `target-ssh-client` → fuerza bruta SSH → Active Response `firewall-drop` → mail a
-   `soc@lab.local`. Cómo probarlo: `vagrant/README.md` → "Probar la respuesta
-   automática". En OPNsense hacen falta las reglas Usuarios → Gestión 1514/1515 y
-   Gestión → DMZ 25. Después: agente en `webapp` para CU-03 (FIM).
+1. **Logs de Suricata y Cowrie → Wazuh.** Hoy cada uno escribe en su volumen y el SIEM
+   no los ve: sin esto no hay correlación (RF-05) ni se ve el CU-01 en el dashboard.
+2. **Agente Wazuh en `targets`** (HIDS/FIM, RF-04) + regla de firewall
+   Servidores/Usuarios → Gestión puertos 1514/1515 (en nftables ya está; en OPNsense hay
+   que crearla).
 3. **MFA en Keycloak** (TOTP/WebAuthn, RF-12): el contenedor corre, falta configurar
    realm, usuarios y MFA.
-4. **Active Response** para CU-03 (webshell): el de CU-02 ya está.
+4. **Playbooks de Active Response** de Wazuh para los 3 casos de RF-06.
 5. Decidir cómo le llega tráfico espejado a Suricata (hoy ve solo el tráfico de la DMZ).
-6. `wazo` y `alerting`: candidatos a recorte con justificación (el docente lo habilitó,
-   ver `brain/decisions.md` 2026-10-05).
+6. `wazo` y `alerting` (no bloquean el 07/10).
 
 Detalle técnico de cada uno en `infra/README.md` → "Qué falta".
 
@@ -96,12 +89,12 @@ Cómo llegar a ellas desde tu máquina: `vagrant/README.md` → "Cómo entrar a 
 | Servicio | Dirección | Credenciales por defecto (`.env.example`) |
 |---|---|---|
 | Router (gateway de cada VLAN) | `10.10.X.254` | OPNsense: las que elijas al instalar |
-| Wazuh dashboard | `http://10.10.90.12:5601` | sin login (plugin de seguridad desactivado, ver `infra/siem-hids/docker-compose.yml`). API: `wazuh-wui` / `WAZUH_API_PASSWORD` |
+| Wazuh dashboard | `http://10.10.90.12:5601` | *sin verificar si pide login*. API: `wazuh-wui` / `WAZUH_API_PASSWORD` |
 | Keycloak | `http://10.10.90.20:8080` | `admin` / `changeme` |
 | App de préstamos (DVWA) | `http://10.10.10.10` | `admin` / `password` |
 | Host SSH víctima | `ssh -p 2222 labuser@10.10.30.10` | `labuser` / `changeme_intentionally_weak` |
 | Honeypot Cowrie | `10.10.20.30` puertos 2222 / 2223 | cualquiera (es una trampa) |
-| Mail | `10.10.20.20` (25, 587, 993) | casilla del SOC `soc@lab.local` (la crea `make up`, contraseña en `infra/mail/.env`): recibe las alertas de Wazuh nivel ≥ 10 |
+| Mail | `10.10.20.20` (25, 587, 993) | crear la cuenta: `docker exec -it mailserver setup email add alertas@lab.local <pass>` |
 
 ## Reglas del repo
 

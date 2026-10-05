@@ -13,6 +13,7 @@ cd "$(dirname "$0")"
 C=wazuh.manager
 CONF=/var/ossec/etc/ossec.conf
 SURICATA_LOG=/var/log/suricata/eve.json
+COWRIE_LOG=/external/cowrie/cowrie.json
 SMTP_SERVER=${SMTP_SERVER:-10.10.20.20}
 EMAIL_TO=${EMAIL_TO:-soc@lab.local}
 EMAIL_FROM=${EMAIL_FROM:-wazuh@lab.local}
@@ -45,7 +46,12 @@ append_block "$SURICATA_LOG" \
   '    <log_format>json</log_format>' \
   "    <location>$SURICATA_LOG</location>" \
   '  </localfile>'
-
+# 1b. Cowrie
+append_block "$COWRIE_LOG" \
+'  <localfile>' \
+"    <log_format>json</log_format>" \
+"    <location>$COWRIE_LOG</location>" \
+'  </localfile>'
 # 3. Active Response: 5712 = fuerza bruta con usuarios inexistentes, 5763 = fuerza bruta
 #    con fallos de autenticación (ambas nivel 10, reglas estándar de sshd). firewall-drop
 #    ya viene definido como <command> en el ossec.conf por defecto del manager.
