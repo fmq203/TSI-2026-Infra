@@ -60,7 +60,8 @@ Claude Code solo; con otra IA, pasarle primero `CLAUDE.md`, este README y
    1000005/1000001 en Suricata → regla 86601 en Wazuh → visibles en el dashboard).
    Falta el honeypot. Suricata solo ve tráfico dirigido a su IP (`10.10.20.50`), y el
    router tiene que dejar pasar al atacante hasta ahí (ver `brain/LEARNINGS.md`).
-2. **Verificar CU-02** (construido 2026-10-05, sin probar): agente Wazuh en
+2. **▶ Siguiente paso — verificar CU-02** (construido 2026-10-05, sin probar; pasos en
+   `brain/notes/plan-recuperacion-atraso.md`): agente Wazuh en
    `target-ssh-client` → fuerza bruta SSH → Active Response `firewall-drop` → mail a
    `soc@lab.local`. Cómo probarlo: `vagrant/README.md` → "Probar la respuesta
    automática". En OPNsense hacen falta las reglas Usuarios → Gestión 1514/1515 y

@@ -1,10 +1,28 @@
 ---
 title: Plan de recuperación por atraso (H1/H2 vencidos)
 tags: [tarea3, plan, atraso, hitos]
-updated: 2026-10-02
+updated: 2026-10-05
 ---
 
 # Plan de recuperación — atraso en H1/H2
+
+## ▶ Siguiente paso (al 05/10/2026): verificar CU-02
+
+Construido y subido (commit `fd562cf`), **sin probar**. En el entorno de cada uno:
+
+1. Router: permitir Usuarios → `10.10.90.10` TCP 1514/1515 y Gestión → `10.10.20.20`
+   TCP 25 (el router nftables de `vagrant/` ya lo hace; en OPNsense, crear las 2 reglas).
+2. En `docker-host`: `git pull` y `make up` dentro de `infra/` (construye la imagen
+   `ssh-victim`, reconfigura el manager y crea `soc@lab.local`).
+3. `docker exec wazuh.manager /var/ossec/bin/agent_control -l` → `ssh-client` Active.
+4. Fuerza bruta (12 contraseñas incorrectas) contra `labuser@10.10.30.10:2222` →
+   `docker exec target-ssh-client iptables -L INPUT -n` muestra el DROP; en el dashboard
+   `rule.id: 5763` y `rule.id: 651`; mail en `soc@lab.local`.
+
+Detalle y comandos: `vagrant/README.md` → "Probar la respuesta automática". Puntos con
+riesgo de falla: formato de `auth.log` (rsyslog en contenedor) y que el mailserver
+acepte el mail del manager por el 25. Si funciona: capturas a `docs/evidencias/`,
+marcar ✅ abajo y en `README.md`. Lo que falle → `brain/LEARNINGS.md`.
 
 ## Estado al 02/10/2026 (fin del día 2)
 
