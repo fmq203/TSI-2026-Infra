@@ -81,3 +81,23 @@ Append-only: qué funcionó, qué no, y por qué.
   dashboard borra `plugins/securityDashboards` antes de arrancar, y se sacan del
   `opensearch_dashboards.yml` las claves `opensearch_security.*` (sin el plugin pasan a
   ser desconocidas y el dashboard no arranca). Resultado: web UI sin login.
+- **2026-10-05 — Suricata veía tráfico (flows) pero no disparaba ninguna alerta: tres
+  causas encadenadas.**
+  1. En NICs virtuales los checksums llegan incompletos y Suricata descarta los
+     paquetes: `af-packet: checksum-checks: no` y `stream: checksum-validation: no`.
+     (`stream: midstream: true` para que los escaneos NULL/FIN/XMAS se inspeccionen.)
+  2. `classtype` en las reglas + `classification-file` apuntando a una ruta que no
+     existe en la imagen (Suricata 8 ya no lo tiene en `/etc/suricata/`). Ojo: en este
+     caso `suricata -T` igual reportó "5 rules successfully loaded"; se sacó `classtype`
+     de las reglas y las rutas fijas del yaml por las dudas.
+  3. **La causa real del 0 final: el firewall.** El router (OPNsense, en el despliegue de
+     referencia) solo dejaba pasar TCP/443 de Servidores a DMZ: el ping y el escaneo
+     nunca llegaban a Suricata. Pista: en `eve.json` los únicos flows del atacante eran a
+     `dest_port:443`; en el Live View de OPNsense no aparecían los bloqueos porque la
+     regla de bloqueo por defecto estaba sin log. Diagnóstico rápido para la próxima:
+     `grep '"src_ip":"<IP atacante>"' eve.json | tail` y mirar a qué puertos/protocolos
+     llegó algo. Con una regla temporal de paso, la regla 1000005 (barrido de ping)
+     disparó al toque.
+- **Para probar las reglas de CU-01:** el atacante tiene que poder llegar a la IP de
+  Suricata (`10.10.20.50`); hoy Suricata solo ve tráfico dirigido a sí mismo (macvlan),
+  no el de los otros servicios de la DMZ.

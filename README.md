@@ -55,9 +55,10 @@ Claude Code solo; con otra IA, pasarle primero `CLAUDE.md`, este README y
 
 ### Infra (para la demo de la auditoría)
 
-1. **Logs de Cowrie → Wazuh.** Suricata ya está conectado a Wazuh (2026-10-05); falta
-   el honeypot. Además Suricata probablemente solo ve tráfico dirigido a su IP
-   (`10.10.20.50`): para la demo de CU-01, escanear esa IP o toda la DMZ.
+1. **Logs de Cowrie → Wazuh.** Suricata ya está conectado a Wazuh y **CU-01 detecta**
+   (2026-10-05: barrido de ping desde la VLAN Servidores → alerta 1000005 en Suricata).
+   Falta el honeypot. Suricata solo ve tráfico dirigido a su IP (`10.10.20.50`), y el
+   router tiene que dejar pasar al atacante hasta ahí (ver `brain/LEARNINGS.md`).
 2. **Agente Wazuh en `targets`** (HIDS/FIM, RF-04) + regla de firewall
    Servidores/Usuarios → Gestión puertos 1514/1515 (en nftables ya está; en OPNsense hay
    que crearla).
