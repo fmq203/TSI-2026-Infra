@@ -20,9 +20,10 @@ se probó de punta a punta en una máquina física.
 | Keycloak (identity) | ✅ contenedor — **falta configurar MFA (TOTP/WebAuthn) adentro** |
 | Suricata (nids) | ✅ con reglas CU-01 — mirror de tráfico sin decidir |
 | Wazuh (siem-hids) | ✅ manager + indexer + dashboard |
-| Logs de Suricata/Cowrie → Wazuh | ❌ pendiente (sin esto el ataque 1 no se ve en el SIEM) |
+| Logs de Suricata → Wazuh | ✅ 2026-10-05 — CU-01 (ping + escaneo SYN) visible en el dashboard |
+| Logs de Cowrie → Wazuh | ❌ pendiente |
 | Agente Wazuh en `targets` | ❌ pendiente (+ regla en el router si es OPNsense) |
-| Ataque 1 (recon) documentado | ❌ pendiente |
+| Ataque 1 (recon) documentado | 🔶 detección funcionando end-to-end; falta escribirlo con evidencia (capturas) en `docs/evidencias/` |
 | Playbook Active Response + ataque 2 (SSH) | ❌ pendiente |
 | Ataque 3 (webshell) | ❌ pendiente |
 | `alerting` (2º canal) | ❌ no construido |

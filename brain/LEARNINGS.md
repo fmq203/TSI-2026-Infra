@@ -101,3 +101,12 @@ Append-only: qué funcionó, qué no, y por qué.
 - **Para probar las reglas de CU-01:** el atacante tiene que poder llegar a la IP de
   Suricata (`10.10.20.50`); hoy Suricata solo ve tráfico dirigido a sí mismo (macvlan),
   no el de los otros servicios de la DMZ.
+- **2026-10-05 — Dashboard de Wazuh vacío aunque el manager tenía las alertas.** El
+  manager escribía las alertas en `alerts.json` y `filebeat test output` daba OK, pero
+  no existía ningún índice `wazuh-alerts-*`: Filebeat 7.10.2 no publica en un servidor
+  que reporta OpenSearch 2.x. Arreglo: `compatibility.override_main_response_version:
+  true` en el `opensearch.yml` del indexer (está en la config oficial de Wazuh; se había
+  perdido al armar la config mínima). Recrear el indexer y reiniciar el manager; Filebeat
+  manda también las alertas atrasadas. Diagnóstico por tramos que sirvió: (1) `grep
+  suricata alerts.json` en el manager, (2) `filebeat test output`, (3) `curl
+  wazuh.indexer:9200/_cat/indices/wazuh-alerts*`.
