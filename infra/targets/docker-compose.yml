@@ -1,3 +1,5 @@
+
+
 # targets/ — Los activos a proteger: app web vulnerable + DB + host SSH cliente.
 # Estos son los servidores/clientes que la consigna propia describe como "activos críticos"
 # (RF-01). Llevan agente Wazuh para reportar al HIDS/FIM (RF-04) y son el objetivo de
@@ -37,28 +39,35 @@ services:
         ipv4_address: ${WEBAPP_IP:-10.10.10.10}
 
   ssh-client:
-    # Imagen propia (ssh-victim/): OpenSSH en 2222 + agente Wazuh. Blanco de CU-02:
-    # la fuerza bruta dispara Active Response (firewall-drop) que bloquea la IP
-    # atacante con iptables dentro de este contenedor — por eso NET_ADMIN.
-    build: ./ssh-victim
-    image: tsi/ssh-victim:4.9.0
+    image: linuxserver/openssh-server:latest
     container_name: target-ssh-client
-    hostname: ssh-client
     restart: unless-stopped
-    cap_add:
-      - NET_ADMIN
     environment:
-      - SSH_USER=${SSH_TEST_USER:-labuser}
-      - SSH_PASSWORD=${SSH_TEST_PASSWORD:?set in .env}   # intencionalmente débil para RT-02, documentar en informe
-      - WAZUH_MANAGER=${WAZUH_MANAGER_IP:-10.10.90.10}
-    volumes:
-      # Conserva client.keys: sin esto, cada recreación del contenedor enrola un agente nuevo.
-      - ssh_victim_ossec_etc:/var/ossec/etc
+      - PUID=1000
+      - PGID=1000
+      - PASSWORD_ACCESS=true
+      - USER_NAME=${SSH_TEST_USER:-labuser}
+      - USER_PASSWORD=${SSH_TEST_PASSWORD:?set in .env}   # intencionalmente débil para RT-02, documentar en informe
+    ports:
+      - "2022:2222"
     networks:
       net_usr:
         ipv4_address: ${SSH_CLIENT_IP:-10.10.30.10}
 
-  # webapp (DVWA) todavía sin agente: se suma para CU-03 (FIM sobre /var/www/html).
+  # wazuh-agent: se instala DENTRO de webapp/ssh-client via sidecar o directamente en la
+  # imagen (mejor opción: extender el Dockerfile de cada target agregando el paquete
+  # wazuh-agent y apuntándolo a siem-hids). Ver docs/07-monitoreo-logs.md cuando se escriba.
+
+  wazuh-agent:
+    build:
+      context: ./wazuh-agent
+    container_name: target-wazuh-agent
+    restart: unless-stopped
+    networks:
+      net_usr:
+        ipv4_address: 10.10.30.12
+    volumes:
+      - wazuh_agent_etc:/var/ossec/etc
 
 networks:
   net_srv:
@@ -68,4 +77,4 @@ networks:
 
 volumes:
   target_db_data:
-  ssh_victim_ossec_etc:
+  wazuh_agent_etc:
