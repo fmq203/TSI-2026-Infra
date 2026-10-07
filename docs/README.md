@@ -20,7 +20,7 @@ Esta carpeta es el **espacio de trabajo** del equipo. Aquí se van copiando y co
 | `12-Notificacion-Incidentes.md` | `plantilla/isaca/12-notificacion-incidentes.md` | ☐ |
 | `28-Informe-Blue-Team.md` | nueva (incluye análisis de la red) | ☐ |
 | `99-bitacora-trabajo.md` | `plantilla/isaca/99-bitacora-trabajo.md` | 🔶 desde 01/10 (01-06/10 carga diferida, declarada); falta firma de ambos. Copia en Excel: `excel/04-bitacora-planilla.xlsx` |
-| `evidencias/` | capturas, vídeos, pcap, logs | ☐ |
+| `evidencias/` | capturas, vídeos, pcap, logs | 🔶 `evidencias/README.md` = kit de captura (E0, CU-01, CU-02, CU-03) con comando→archivo→qué prueba. **Sin artefactos todavía**: hay que correrlo |
 
 ### Excel MCU 5.0 (`excel/`, plantillas de `plantilla/mcu5/excel/`)
 
