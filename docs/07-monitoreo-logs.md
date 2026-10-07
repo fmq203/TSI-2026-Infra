@@ -35,7 +35,7 @@ Horas en **UTC** en todos los registros (RNF-05).
 |---|---|---|---|---|
 | Red (NIDS) | Suricata (`jasonish/suricata`) | DMZ, 10.10.20.50 | Detección de tráfico; escribe `eve.json` | ✅ verificado (CU-01) |
 | Engaño | Cowrie | DMZ, 10.10.20.30 | Honeypot SSH/Telnet; escribe `cowrie.json` | 🔶 conectado, sin verificar |
-| Host (HIDS) | Agente Wazuh 4.9.0 | Embebido en `target-ssh-client` (10.10.30.10) | `auth.log`, FIM, Active Response | 🔶 sin verificar |
+| Host (HIDS) | Agente Wazuh 4.9.0 | Embebido en `target-ssh-client` (10.10.30.10) | `auth.log`, FIM, Active Response | ✅ conectado 07/10 (FIM, SCA y rootcheck corriendo); Active Response sin probar |
 | SIEM | Wazuh manager + indexer + dashboard 4.9.0 | Gestión, 10.10.90.10/.11/.12 | Decodificación, reglas, correlación, almacenamiento, consola | ✅ |
 | SOAR | Wazuh Active Response | Manager → agentes | Respuesta automatizada (`firewall-drop`) | 🔶 sin verificar |
 | Alertas | `email_notification` del manager → docker-mailserver | DMZ, 10.10.20.20 | Mail a `soc@lab.local` para nivel ≥ 10 | 🔶 configurado, sin captura |
@@ -55,7 +55,7 @@ paralelo, Active Response y mail. Toda la configuración del manager la aplica
 |---|---|---|---|---|
 | NIDS | Suricata `eve.json` | Alertas de firmas, flows | Alta | ✅ Sí (verificado 05/10) |
 | Honeypot | Cowrie `cowrie.json` | Logins, comandos del atacante | Alta | 🔶 Configurado, sin verificar |
-| Puesto de usuario | `auth.log` vía agente | Logins SSH exitosos/fallidos | Alta | 🔶 Configurado, sin verificar |
+| Puesto de usuario | `auth.log` vía agente | Logins SSH exitosos/fallidos | Alta | 🔶 Agente conectado (07/10); eventos de login sin verificar |
 | App de préstamos | Apache/PHP de DVWA | Accesos, 4xx/5xx, archivos del webroot | Alta | ❌ No (falta agente — CU-03) |
 | Base de clientes | MySQL | Conexiones, errores | Alta | ❌ No |
 | Identidad | Keycloak | Autenticaciones, MFA | Alta | ❌ No (CU-04) |

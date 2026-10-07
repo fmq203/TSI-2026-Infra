@@ -19,7 +19,7 @@ estado está y qué falta.
 |---|---|---|
 | Router / firewall + segmentación | OPNsense (referencia) · nftables (`vagrant/`) | ✅ Funcionando |
 | NIDS | Suricata, 5 firmas propias | ✅ Funcionando |
-| SIEM + HIDS | Wazuh 4.9.0 (manager, indexer, dashboard) | ✅ Funcionando |
+| SIEM + HIDS | Wazuh 4.9.0 (manager, indexer, dashboard) + agente en el puesto de usuario | ✅ Funcionando (agente `ssh-client` conectado 07/10, con FIM y SCA) |
 | SOAR | Wazuh Active Response (`firewall-drop`) | 🔶 Construido, sin verificar |
 | Honeypot | Cowrie → Wazuh | 🔶 Construido, sin verificar |
 | Alertas por correo | docker-mailserver → `soc@lab.local` | 🔶 Configurado, sin evidencia |
@@ -31,7 +31,7 @@ estado está y qué falta.
 | Caso | Estado |
 |---|---|
 | CU-01 Reconocimiento / escaneo | ✅ Detectado de punta a punta (05/10): Suricata → Wazuh → dashboard. [INC-2026-001](docs/04-gestion-incidentes.md) |
-| CU-02 Fuerza bruta SSH → bloqueo automático → mail | 🔶 Construido; **verificación pendiente** |
+| CU-02 Fuerza bruta SSH → bloqueo automático → mail | 🔶 Desplegado en el entorno de referencia el 07/10 (agente conectado, reglas del router creadas); **falta correr el ataque** |
 | CU-03 Webshell (FIM + aislamiento) | ❌ Pendiente |
 | CU-04 Credenciales robadas · CU-05 Exfiltración por DNS | ❌ Pendientes |
 

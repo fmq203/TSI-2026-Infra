@@ -244,6 +244,28 @@ Fecha: 07/10/2026 · Equipo: Blue · Responsable: fmq203 · Carga: el mismo día
 
 ---
 
+---
+Fecha: 07/10/2026 · Equipo: Blue · Responsable: fmq203 · Carga: el mismo día
+---
+
+### Actividad: Despliegue de CU-02 y Cowrie en el entorno de referencia
+
+- **Fase**: Implementación / Prueba
+- **Duración**: no registrada (agente conectado a las 18:31 UTC)
+- **Tarea realizada**: `git pull` en `docker-host` (estaba en `0472d64`, anterior a
+  CU-02); `honeypot`, `siem-hids`, `mail` y `targets` levantados en orden;
+  `configure-manager.sh` y `ensure-accounts.sh`. Reglas nuevas en OPNsense: OPT2 →
+  `10.10.90.10` TCP 1514-1515, OPT3 → `10.10.20.20` TCP 25.
+- **Herramienta / comando**: `pct exec 108 -- ...`; `nc -zv`; `ip neigh`; OPNsense
+  Firewall → Rules / Live View
+- **Resultado**: Éxito: agente `ssh-client` **Active** (ID 001), con FIM, SCA y rootcheck.
+- **Evidencia anexa**: salida de `agent_control -l` (a guardar en `docs/evidencias/`).
+- **Incidencia / hallazgo**: CU-02 nunca había estado desplegado en el entorno de
+  referencia. El agente no enrolaba por timeout: faltaban las reglas y, ya creada, la de
+  OPT2 tenía el rango en *Source port* en vez de *Destination port*. Detalle en
+  `brain/LEARNINGS.md` (2026-10-07).
+- **Observaciones**: La ejecución del ataque de CU-02 queda como siguiente paso.
+
 ## 3. Tabla resumen (formato Excel `04-bitacora-planilla.xlsx`)
 
 | Fecha | Hora (UTC) | Fase | Responsable | Tarea | Herramienta/Comando | Resultado/Evidencia | Incidencia | Observaciones |

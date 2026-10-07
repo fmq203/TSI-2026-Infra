@@ -120,3 +120,24 @@ nada de lo que viene después. En un entorno donde el volumen ya existía (de un
 despliegue anterior) el problema **no se ve** — solo aparece en un despliegue desde
 cero (`vagrant up`). Regla: al montar un volumen de otro stack, mover ese stack antes en
 `STACKS` del `Makefile` y en la guía manual de `infra/README.md`.
+
+## 2026-10-07 — CU-02 nunca había corrido en el despliegue de referencia: tres causas
+
+1. **`docker-host` estaba en `0472d64`** (05/10 11:57), el commit *anterior* al que
+   construyó CU-02 (`fd562cf`): la imagen `ssh-victim`, el Active Response y el mail
+   nunca se habían desplegado ahí. Antes de dar algo por "construido", mirar en qué commit
+   está el entorno donde se va a mostrar (`git log -1` en `/opt/TSI-2026-Infra`).
+2. **Faltaban las reglas de OPNsense** OPT2 (Usuarios) → `10.10.90.10` TCP 1514-1515 y
+   OPT3 (Gestión) → `10.10.20.20` TCP 25. Una interfaz OPT nueva bloquea todo lo que
+   entra. Síntoma: en el agente, `Unable to connect to enrollment service` cada ~2 min
+   (timeout de TCP = paquete descartado; un "refused" inmediato habría sido el manager).
+3. **La regla se creó con el rango en *Source port*** en lugar de *Destination port*. El
+   agente sale de un puerto aleatorio *hacia* 1514/1515; con el rango en origen la regla
+   no coincide nunca. En OPNsense, el *Source port* casi siempre queda en `any`.
+
+Diagnóstico que funcionó, por tramos: `nc -zv` al 1515 desde un contenedor descartable en
+`net_mgmt` (sin router: abrió → el manager está bien) y en `net_usr` (con router: timeout
+→ es el firewall); `ip neigh` desde `docker-host` para confirmar capa 2 con la MAC de la NIC
+del router; prueba con `/dev/tcp` desde la IP real del agente (una regla `/32` no cubre a
+un contenedor de prueba con otra IP). Resultado 07/10 15:31 (UTC−3): `ssh-client` Active,
+con FIM, SCA (CIS Debian 12) y rootcheck corriendo.
