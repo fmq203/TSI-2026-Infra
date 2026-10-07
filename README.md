@@ -47,9 +47,10 @@ Claude Code solo; con otra IA, pasarle primero `CLAUDE.md`, este README y
   sumado el 06/10, **sin verificar**. CU-03 (webshell) sin empezar.
 - **`vagrant/`:** escrito y revisado, **todavía no probado de punta a punta en una
   máquina física**. Quien lo corra primero: anotar en `brain/LEARNINGS.md` lo que falle.
-- **docs/:** `00-arquitectura.md` y `40-consigna-propia.md` en borrador — **falta
-  revisarlos entre los dos y aprobación docente**. El resto de la matriz en `☐`
-  (`docs/README.md`). Bitácora sin empezar, `docs/evidencias/` vacía.
+- **docs/ (07/10):** borradores de `00`, `40`, `01` política, `03` riesgos, `04`
+  incidentes, `07` monitoreo, `09` accesos y `99` bitácora, más los 4 Excel MCU en
+  `docs/excel/` — **falta revisarlos entre los dos, firmas y aprobación docente**.
+  Faltan `06`, `10`, `11`, `12`, `28`. **`docs/evidencias/` vacía**: es lo más débil.
 - Atraso: H1 (21/09) y H2 (28/09) vencidos; se sigue
   `brain/notes/plan-recuperacion-atraso.md`. **La infra va adelantada, la documentación
   atrasada.**

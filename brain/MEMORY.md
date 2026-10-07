@@ -94,8 +94,10 @@ Todo contenedor nuevo con IP fija: el IPAM de Docker no sabe que `.5` es de
 Lista mantenida en `README.md` → "Pendientes" (infra, documentación, seguridad) y estado
 por día en [[plan-recuperacion-atraso]]. Al 06/10: Suricata y Cowrie conectados a Wazuh
 (Cowrie sin verificar), CU-02 construido sin verificar, falta agente en `webapp` (CU-03),
-MFA en Keycloak, y probar `vagrant up` de punta a punta en una máquina física. **La
-documentación (ISACA, Excel MCU, bitácora, evidencias) es lo más atrasado.**
+MFA en Keycloak, y probar `vagrant up` de punta a punta en una máquina física.
+Documentación al 07/10: borradores de 00, 01, 03, 04, 07, 09, 40, 99 y los 4 Excel MCU
+(`docs/excel/`); faltan 06, 10, 11, 12, 28 y **toda la evidencia** (`docs/evidencias/`
+vacía). Riesgos abiertos priorizados en `docs/03-analisis-riesgos.md`.
 
 Orden de arranque de stacks: `identity nids honeypot siem-hids mail targets` — nids y
 honeypot antes que siem-hids porque el manager monta sus volúmenes de logs como
