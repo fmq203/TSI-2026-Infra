@@ -157,3 +157,23 @@ referencia la anterior.
   (alertas nivel ≥ 10) a `soc@lab.local` en el mailserver de la DMZ. CU-01 pasa a nivel
   10 con una regla local (100100) para que también notifique.
   **Fuente:** conversación 2026-10-05.
+
+- **2026-10-06** — **Restaurado `ssh-client` a la imagen `ssh-victim/` (CU-02), tras un
+  commit que la había reemplazado.** El commit `ecf697c` (Renzo) volvió `target-ssh-client`
+  a `linuxserver/openssh-server` sin agente, y sumó un `wazuh-agent` en contenedor aparte
+  (`infra/targets/wazuh-agent/`). Ese sidecar no comparte filesystem/red/pid con
+  `ssh-client`, así que no puede ver sus logs de auth reales ni traía `NET_ADMIN` —
+  rompía el Active Response de CU-02 (ver entrada 2026-10-05). Se restauró el servicio
+  `ssh-client` a `build: ./ssh-victim` (el directorio no se había tocado, seguía intacto)
+  y se sacó el `wazuh-agent` suelto del compose de `targets/`. El README también había
+  vuelto dos líneas a un estado desactualizado (dashboard "sin verificar login", mail "sin
+  cuenta automática") — se restauraron al estado real, verificado el 06/10 que seguía
+  vigente (`DISABLE_SECURITY_PLUGIN=true` y `infra/mail/ensure-accounts.sh` siguen ahí).
+  **Lo que SÍ sumó ese commit y se mantuvo:** integración de logs de Cowrie a Wazuh
+  (`be2e6b7` — regla 100110, `configure-manager.sh` lee `cowrie.json`), eso no tocaba
+  `targets/` y quedó igual.
+  **Pendiente:** avisarle a Renzo (no tenía el `brain/` de este repo actualizado al
+  hacer el cambio, o no lo revisó) y ver si el Dockerfile de `wazuh-agent/` se reutiliza
+  más adelante para CU-03 (FIM en `webapp`), con el volumen de `/var/www/html`
+  compartido — tal como está hoy no sirve para eso tampoco.
+  **Fuente:** conversación 2026-10-06.
