@@ -68,6 +68,7 @@ Las alertas de nivel **≥ 10** generan mail automático a `soc@lab.local`
 | INC-2026-001 | 05/10/2026 ≈11:45 | CU-01: barrido de ping y escaneo SYN desde la VLAN Servidores contra la DMZ | S3 | Red interna | DMZ — `suricata` (10.10.20.50) | **Cerrado** (simulación ejecutada) | fmq203 |
 | INC-2026-002 | — | CU-02: fuerza bruta SSH contra un puesto de usuario | S2 | Red interna (SSH) | `target-ssh-client` (10.10.30.10) | **Simulación pendiente de ejecutar** | fmq203 / R. Rampoldi |
 | INC-2026-003 | — | CU-03: webshell en la app de préstamos | S1 | Web | `target-webapp` (10.10.10.10) | **No implementado** (falta agente/FIM en `webapp`) | — |
+| INC-2026-004 | — | **Ejercicio de escritorio** (no ocurrió): exfiltración de la base de clientes por DNS (CU-05) para probar la notificación | S0 (supuesto) | Red (DNS saliente) | A04 base de clientes | Ejercicio documentado en `12-notificacion-incidentes.md` | RSI |
 
 Los hallazgos del Red Team (desde el 28/10/2026) se agregan a esta tabla como
 INC-2026-1xx.

@@ -227,6 +227,21 @@ Fecha: 07/10/2026 · Equipo: Blue · Responsable: fmq203 · Carga: el mismo día
   hay que elegir cómo ponerle MFA.
 - **Observaciones**: Todo quedó como riesgo con tratamiento en `03-analisis-riesgos.md`.
 
+### Actividad: Kit de evidencias y documentos 06, 11, 12
+
+- **Fase**: Documentación
+- **Duración**: no registrada
+- **Tarea realizada**: `docs/evidencias/README.md` (procedimiento de captura de CU-01 y
+  CU-02); continuidad (`06`), SoA con el Anexo A completo (`11`, 93 controles) y
+  notificación (`12`, con un ejercicio de escritorio INC-2026-004). Push al repo
+  compartido.
+- **Resultado**: Borradores. La evidencia **no se capturó**: desde la sesión de trabajo
+  no hay acceso de shell a `docker-host` por las vías permitidas; se corre en cada
+  despliegue.
+- **Incidencia / hallazgo**: La plantilla de SoA dice 79 controles; ISO 27001:2022 tiene
+  93. No existe ningún respaldo de datos (RF-13).
+- **Observaciones**: Renzo avisado por fuera de los cambios a sus commits (fmq203).
+
 ---
 
 ## 3. Tabla resumen (formato Excel `04-bitacora-planilla.xlsx`)
@@ -244,6 +259,7 @@ Fecha: 07/10/2026 · Equipo: Blue · Responsable: fmq203 · Carga: el mismo día
 | 07/10/2026 | 01:56-01:59 | Prueba/Doc. | fmq203 | Corrección de regresiones | git diff | Éxito (sin desplegar) — `543c519`, `1e3e5a2` | 2 regresiones | Mismo día |
 | 07/10/2026 | 02:08- | Doc. | fmq203 | Incidentes, bitácora, Excel 02/03/04 | — | Borradores — `0ba84e1`, `b3ba156`, … | Plazos BCU/URCDP sin fuente | Mismo día |
 | 07/10/2026 | — | Doc. | fmq203 | Excel 01 + ISACA 01, 03, 07, 09 | — | Borradores | 5 brechas nuevas (ver entrada) | Mismo día |
+| 07/10/2026 | — | Doc. | fmq203 | Kit de evidencias; 06, 11, 12; push | git push | Borradores | Sin respaldos de datos; SoA 93 vs 79 | Mismo día |
 
 ---
 

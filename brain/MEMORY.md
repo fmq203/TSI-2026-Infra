@@ -95,8 +95,8 @@ Lista mantenida en `README.md` → "Pendientes" (infra, documentación, segurida
 por día en [[plan-recuperacion-atraso]]. Al 06/10: Suricata y Cowrie conectados a Wazuh
 (Cowrie sin verificar), CU-02 construido sin verificar, falta agente en `webapp` (CU-03),
 MFA en Keycloak, y probar `vagrant up` de punta a punta en una máquina física.
-Documentación al 07/10: borradores de 00, 01, 03, 04, 07, 09, 40, 99 y los 4 Excel MCU
-(`docs/excel/`); faltan 06, 10, 11, 12, 28 y **toda la evidencia** (`docs/evidencias/`
+Documentación al 07/10: borradores de 00, 01, 03, 04, 06, 07, 09, 11, 12, 40, 99 y los 4
+Excel MCU (`docs/excel/`); faltan 10, 28 y **toda la evidencia** (`docs/evidencias/`
 vacía). Riesgos abiertos priorizados en `docs/03-analisis-riesgos.md`.
 
 Orden de arranque de stacks: `identity nids honeypot siem-hids mail targets` — nids y
