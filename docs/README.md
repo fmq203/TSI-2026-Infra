@@ -28,7 +28,7 @@ Esta carpeta es el **espacio de trabajo** del equipo. Aquí se van copiando y co
 |---|---|
 | `excel/01-controles-mcu5-perfil-avanzado.xlsx` | ☐ |
 | `excel/02-registro-activos-mcu5.xlsx` | 🔶 22 activos (A01-A22): hosts, servicios, datos, consolas y las 4 VLANs. Revisar dueños y clasificación entre los dos |
-| `excel/03-matriz-raci-mcu5.xlsx` | ☐ |
+| `excel/03-matriz-raci-mcu5.xlsx` | 🔶 16 procesos de seguridad de la red (una sola A por proceso) + hoja `Roles` con propuesta de quién cubre cada rol — confirmar entre los dos |
 | `excel/04-bitacora-planilla.xlsx` | 🔶 mismo contenido que `99-bitacora-trabajo.md` (lagunas en gris). Se carga a diario desde el 07/10 |
 
 > Para el **Red Team**: copie esta carpeta (o el tag de git) y genere su informe en `02-informe-red-team.md` (nuevo), completando además las plantillas de incidentes/vulnerabilidades con cada hallazgo.

@@ -195,6 +195,20 @@ Fecha: 07/10/2026 · Equipo: Blue · Responsable: fmq203 · Carga: el mismo día
   fallaba `make up` entero. No se notaba en un entorno donde el volumen ya existía.
 - **Observaciones**: Cambios pendientes de push hasta coordinarlos con Renzo.
 
+### Actividad: Documentación — incidentes, bitácora y Excel MCU
+
+- **Fase**: Documentación
+- **Duración**: no registrada (commits desde 02:08 UTC)
+- **Tarea realizada**: `docs/04-gestion-incidentes.md` (severidades, procedimiento,
+  INC-2026-001..003), esta bitácora, y los Excel `04-bitacora-planilla`,
+  `02-registro-activos-mcu5` (A01-A22) y `03-matriz-raci-mcu5` (16 procesos + hoja de
+  roles con propuesta de asignación).
+- **Resultado**: Borradores. Commits `0ba84e1`, `b3ba156` y el de la RACI.
+- **Incidencia / hallazgo**: Plazos de notificación BCU/URCDP no están en las plantillas
+  del curso: quedan "a confirmar".
+- **Observaciones**: Asignación de roles del equipo y dueños de activos pendiente de
+  revisar entre los dos.
+
 ---
 
 ## 3. Tabla resumen (formato Excel `04-bitacora-planilla.xlsx`)
@@ -210,6 +224,7 @@ Fecha: 07/10/2026 · Equipo: Blue · Responsable: fmq203 · Carga: el mismo día
 | 05/10/2026 | 23:58 | Impl. | R. Rampoldi | Cowrie → Wazuh | configure-manager.sh | Sin verificar — `be2e6b7` | Rompía make up desde cero | Carga diferida |
 | 06/10/2026 | 22:47 | Impl. | R. Rampoldi | Agente Wazuh en targets | compose | Revertido — `ecf697c` | Agente aislado del blanco | Carga diferida |
 | 07/10/2026 | 01:56-01:59 | Prueba/Doc. | fmq203 | Corrección de regresiones | git diff | Éxito (sin desplegar) — `543c519`, `1e3e5a2` | 2 regresiones | Mismo día |
+| 07/10/2026 | 02:08- | Doc. | fmq203 | Incidentes, bitácora, Excel 02/03/04 | — | Borradores — `0ba84e1`, `b3ba156`, … | Plazos BCU/URCDP sin fuente | Mismo día |
 
 ---
 
