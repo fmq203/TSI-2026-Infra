@@ -5,6 +5,72 @@ Keycloak, mail, honeypot y blancos vulnerables en Docker) y su documentación fo
 Este README es la **puerta de entrada**: qué hay, cómo levantarlo desde cero, en qué
 estado está y qué falta.
 
+## Estado del proyecto — 07/10/2026
+
+**Escenario:** FinSegura S.A., fintech de préstamos online
+([consigna propia](docs/40-consigna-propia.md)). **Arquitectura:** router/firewall +
+4 VLANs (Servidores, DMZ, Usuarios, Gestión) y todos los servicios en Docker sobre un
+`docker-host` ([arquitectura](docs/00-arquitectura.md)). Se despliega desde cero con
+`vagrant up` ([vagrant/](vagrant/README.md)) o `make up` ([infra/](infra/README.md)).
+
+### Infraestructura
+
+| Componente | Herramienta | Estado |
+|---|---|---|
+| Router / firewall + segmentación | OPNsense (referencia) · nftables (`vagrant/`) | ✅ Funcionando |
+| NIDS | Suricata, 5 firmas propias | ✅ Funcionando |
+| SIEM + HIDS | Wazuh 4.9.0 (manager, indexer, dashboard) | ✅ Funcionando |
+| SOAR | Wazuh Active Response (`firewall-drop`) | 🔶 Construido, sin verificar |
+| Honeypot | Cowrie → Wazuh | 🔶 Construido, sin verificar |
+| Alertas por correo | docker-mailserver → `soc@lab.local` | 🔶 Configurado, sin evidencia |
+| Identidad / MFA | Keycloak 26 | 🔶 Corre; MFA sin configurar |
+| Activos a proteger | App de préstamos (DVWA) + MySQL + puesto de usuario | ✅ Funcionando |
+
+### Casos de uso (detección → respuesta → notificación)
+
+| Caso | Estado |
+|---|---|
+| CU-01 Reconocimiento / escaneo | ✅ Detectado de punta a punta (05/10): Suricata → Wazuh → dashboard. [INC-2026-001](docs/04-gestion-incidentes.md) |
+| CU-02 Fuerza bruta SSH → bloqueo automático → mail | 🔶 Construido; **verificación pendiente** |
+| CU-03 Webshell (FIM + aislamiento) | ❌ Pendiente |
+| CU-04 Credenciales robadas · CU-05 Exfiltración por DNS | ❌ Pendientes |
+
+### Documentación (borradores, pendientes de revisión y aprobación)
+
+| Documento | Contenido |
+|---|---|
+| [01 Política](docs/01-politica-seguridad.md) | Principios, alcance, roles, políticas específicas |
+| [03 Riesgos](docs/03-analisis-riesgos.md) | 13 riesgos sacados de brechas reales del repo, matriz 5×5, plan de tratamiento |
+| [04 Incidentes](docs/04-gestion-incidentes.md) | Severidades, procedimiento, playbooks por caso de uso, registro INC-2026-001..004 |
+| [06 Continuidad](docs/06-plan-continuidad.md) | RTO/RPO, inventario de respaldo, prueba de restauración |
+| [07 Monitoreo](docs/07-monitoreo-logs.md) | Fuentes de log, reglas, retención |
+| [09 Accesos](docs/09-gestion-accesos.md) | MFA (TOTP/WebAuthn), Argon2, política por consola |
+| [11 SoA](docs/11-soa-plan-tratamiento.md) | Anexo A ISO 27001:2022 completo (93 controles) y brecha MCU 5.0 por función |
+| [12 Notificación](docs/12-notificacion-incidentes.md) | Criterios BCU/URCDP y ejercicio de escritorio |
+| [99 Bitácora](docs/99-bitacora-trabajo.md) | Desde el 01/10 (ver aclaración abajo) |
+| [Excel MCU 5.0](docs/excel/) | 01 controles (47: 5 implementados, 26 parciales, 15 pendientes, 1 N.A.), 02 activos (A01-A22), 03 RACI, 04 bitácora |
+
+### Lo que falta (hacia la auditoría del 14/10)
+
+1. **Evidencia** en [`docs/evidencias/`](docs/evidencias/README.md): el procedimiento de
+   captura está escrito; faltan las capturas de CU-01 y CU-02.
+2. **Verificar CU-02** de punta a punta (es la demostración obligatoria de detección →
+   respuesta → notificación).
+3. **MFA** en Keycloak y en el dashboard de Wazuh.
+4. CU-03, retención de logs de 90 días, respaldos con prueba de restauración.
+5. Documentos `10` (vulnerabilidades) y `28` (informe Blue Team).
+
+### Aclaraciones
+
+- **Atraso y bitácora:** H1 y H2 vencieron sin entregables. La bitácora arranca el 01/10;
+  las entradas del 01 al 06/10 se cargaron después a partir de los commits y lo dice
+  explícitamente; los días sin registro **no se reconstruyeron**.
+- **Recortes con justificación** (habilitados en clase el 05/10): Wazo, segundo canal de
+  alertas y TheHive/Cortex; la respuesta automática la hace Wazuh Active Response. Detalle
+  en [`brain/decisions.md`](brain/decisions.md).
+- El estado de cada control y documento está tomado del repo: lo que no se verificó
+  figura como "sin verificar".
+
 ## Empezar desde cero
 
 **Si no tenés nada armado: ir a [`vagrant/README.md`](vagrant/README.md).** Con
@@ -34,26 +100,6 @@ TSI-2026-Infra/
 Pensado para leerse con o sin asistente de IA: el `CLAUDE.md` de la raíz orienta a
 Claude Code solo; con otra IA, pasarle primero `CLAUDE.md`, este README y
 `brain/MEMORY.md`.
-
-## Estado actual (2026-10-06)
-
-- **Infra construida en el repo:** 6 de 9 stacks — `identity` (Keycloak), `siem-hids`
-  (Wazuh manager + indexer + dashboard), `nids` (Suricata con reglas para CU-01),
-  `mail`, `honeypot` (Cowrie), `targets` (DVWA + MySQL + host SSH víctima con agente
-  Wazuh). Sin construir: `wazo`, `alerting` (candidatos a recorte) y
-  `soar-thehive-optional` (no hace falta).
-- **Detección/respuesta:** CU-01 (recon) verificado de punta a punta. CU-02 (fuerza
-  bruta SSH → Active Response → mail) construido, **sin verificar**. Cowrie → Wazuh
-  sumado el 06/10, **sin verificar**. CU-03 (webshell) sin empezar.
-- **`vagrant/`:** escrito y revisado, **todavía no probado de punta a punta en una
-  máquina física**. Quien lo corra primero: anotar en `brain/LEARNINGS.md` lo que falle.
-- **docs/ (07/10):** borradores de `00`, `40`, `01` política, `03` riesgos, `04`
-  incidentes, `07` monitoreo, `09` accesos y `99` bitácora, más los 4 Excel MCU en
-  `docs/excel/` — **falta revisarlos entre los dos, firmas y aprobación docente**.
-  `06`, `11` y `12` también en borrador. Faltan `10` y `28`. **`docs/evidencias/` vacía**: es lo más débil.
-- Atraso: H1 (21/09) y H2 (28/09) vencidos; se sigue
-  `brain/notes/plan-recuperacion-atraso.md`. **La infra va adelantada, la documentación
-  atrasada.**
 
 ## Pendientes
 
