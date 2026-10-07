@@ -110,3 +110,13 @@ Append-only: qué funcionó, qué no, y por qué.
   manda también las alertas atrasadas. Diagnóstico por tramos que sirvió: (1) `grep
   suricata alerts.json` en el manager, (2) `filebeat test output`, (3) `curl
   wazuh.indexer:9200/_cat/indices/wazuh-alerts*`.
+
+## 2026-10-06 — Volumen `external` de otro stack = dependencia de orden de arranque
+
+`siem-hids` monta los volúmenes de logs de `nids` y `honeypot` como `external: true`.
+Si ese stack no se levantó antes, `docker compose up` de `siem-hids` falla con
+"external volume ... not found", y como `make up` corta con `|| exit 1`, no arranca
+nada de lo que viene después. En un entorno donde el volumen ya existía (de un
+despliegue anterior) el problema **no se ve** — solo aparece en un despliegue desde
+cero (`vagrant up`). Regla: al montar un volumen de otro stack, mover ese stack antes en
+`STACKS` del `Makefile` y en la guía manual de `infra/README.md`.

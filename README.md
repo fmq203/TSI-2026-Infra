@@ -35,18 +35,21 @@ Pensado para leerse con o sin asistente de IA: el `CLAUDE.md` de la raíz orient
 Claude Code solo; con otra IA, pasarle primero `CLAUDE.md`, este README y
 `brain/MEMORY.md`.
 
-## Estado actual (2026-10-02)
+## Estado actual (2026-10-06)
 
 - **Infra construida en el repo:** 6 de 9 stacks — `identity` (Keycloak), `siem-hids`
   (Wazuh manager + indexer + dashboard), `nids` (Suricata con reglas para CU-01),
-  `mail`, `honeypot` (Cowrie), `targets` (DVWA + MySQL + host SSH víctima). Sin
-  construir: `wazo`, `alerting` (y `soar-thehive-optional`, que no hace falta).
-  Probados y funcionando en el despliegue de referencia de uno de los integrantes.
+  `mail`, `honeypot` (Cowrie), `targets` (DVWA + MySQL + host SSH víctima con agente
+  Wazuh). Sin construir: `wazo`, `alerting` (candidatos a recorte) y
+  `soar-thehive-optional` (no hace falta).
+- **Detección/respuesta:** CU-01 (recon) verificado de punta a punta. CU-02 (fuerza
+  bruta SSH → Active Response → mail) construido, **sin verificar**. Cowrie → Wazuh
+  sumado el 06/10, **sin verificar**. CU-03 (webshell) sin empezar.
 - **`vagrant/`:** escrito y revisado, **todavía no probado de punta a punta en una
   máquina física**. Quien lo corra primero: anotar en `brain/LEARNINGS.md` lo que falle.
 - **docs/:** `00-arquitectura.md` y `40-consigna-propia.md` en borrador — **falta
   revisarlos entre los dos y aprobación docente**. El resto de la matriz en `☐`
-  (`docs/README.md`). Bitácora sin empezar.
+  (`docs/README.md`). Bitácora sin empezar, `docs/evidencias/` vacía.
 - Atraso: H1 (21/09) y H2 (28/09) vencidos; se sigue
   `brain/notes/plan-recuperacion-atraso.md`. **La infra va adelantada, la documentación
   atrasada.**

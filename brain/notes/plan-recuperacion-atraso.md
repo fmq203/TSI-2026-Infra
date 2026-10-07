@@ -1,10 +1,20 @@
 ---
 title: Plan de recuperación por atraso (H1/H2 vencidos)
 tags: [tarea3, plan, atraso, hitos]
-updated: 2026-10-05
+updated: 2026-10-06
 ---
 
 # Plan de recuperación — atraso en H1/H2
+
+## Estado al 06/10/2026 (noche, víspera del freeze)
+
+- Cowrie → Wazuh integrado (Renzo). Se corrigió el orden de `make up` (honeypot antes
+  que siem-hids) — sin eso un despliegue desde cero fallaba.
+- Un commit (`ecf697c`) había reemplazado el `ssh-client` de CU-02 por un agente aislado
+  que no veía sus logs; restaurado (ver [[decisions]] 2026-10-06).
+- Sigue **sin verificar**: CU-02 de punta a punta y Cowrie en el dashboard.
+- Documentación: igual que al 02/10 — solo los borradores `00` y `40`. Sin bitácora, sin
+  Excel, sin evidencias. Es el bloque crítico para el 07/10.
 
 ## ▶ Siguiente paso (al 05/10/2026): verificar CU-02
 
@@ -39,7 +49,7 @@ se probó de punta a punta en una máquina física.
 | Suricata (nids) | ✅ con reglas CU-01 — mirror de tráfico sin decidir |
 | Wazuh (siem-hids) | ✅ manager + indexer + dashboard |
 | Logs de Suricata → Wazuh | ✅ 2026-10-05 — CU-01 (ping + escaneo SYN) visible en el dashboard |
-| Logs de Cowrie → Wazuh | ❌ pendiente |
+| Logs de Cowrie → Wazuh | 🔶 2026-10-06 (Renzo, `be2e6b7`) — regla 100110; orden de arranque corregido el mismo día; sin verificar en el dashboard |
 | Agente Wazuh en `targets` | 🔶 2026-10-05 en `ssh-client` (imagen `targets/ssh-victim/`), sin verificar; falta `webapp` (CU-03) |
 | Ataque 1 (recon) documentado | 🔶 detección funcionando end-to-end; falta escribirlo con evidencia (capturas) en `docs/evidencias/` |
 | Playbook Active Response + ataque 2 (SSH) | 🔶 2026-10-05 construido (5712/5763 → firewall-drop + mail a soc@lab.local), sin verificar |

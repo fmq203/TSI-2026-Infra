@@ -1,7 +1,7 @@
 ---
 title: Hechos estables — Tarea 3 (foto del estado actual)
 tags: [tarea3, memoria, arquitectura, fechas, estado]
-updated: 2026-10-02
+updated: 2026-10-06
 ---
 
 # Hechos estables — Tarea 3
@@ -92,7 +92,11 @@ Todo contenedor nuevo con IP fija: el IPAM de Docker no sabe que `.5` es de
 ## Pendientes
 
 Lista mantenida en `README.md` → "Pendientes" (infra, documentación, seguridad) y estado
-por día en [[plan-recuperacion-atraso]]. Lo más urgente para la demo: llevar los logs de
-Cowrie a Wazuh (Suricata ya conectado el 2026-10-05), agente Wazuh en `targets`, MFA en
-Keycloak y los playbooks de Active Response. Y probar `vagrant up` de punta a punta en
-una máquina física.
+por día en [[plan-recuperacion-atraso]]. Al 06/10: Suricata y Cowrie conectados a Wazuh
+(Cowrie sin verificar), CU-02 construido sin verificar, falta agente en `webapp` (CU-03),
+MFA en Keycloak, y probar `vagrant up` de punta a punta en una máquina física. **La
+documentación (ISACA, Excel MCU, bitácora, evidencias) es lo más atrasado.**
+
+Orden de arranque de stacks: `identity nids honeypot siem-hids mail targets` — nids y
+honeypot antes que siem-hids porque el manager monta sus volúmenes de logs como
+`external`.

@@ -1,8 +1,9 @@
 .PHONY: networks prereqs up down status logs up-optional down-optional
 
 # Solo los stacks que existen hoy. Sumar wazo/alerting acá cuando se construyan.
-# nids antes que siem-hids: el manager de Wazuh monta el volumen de logs de Suricata.
-STACKS := identity nids siem-hids mail honeypot targets
+# nids y honeypot ANTES que siem-hids: el manager de Wazuh monta sus volúmenes de logs
+# (nids_suricata_logs, honeypot_cowrie_logs) como `external` — si no existen, falla.
+STACKS := identity nids honeypot siem-hids mail targets
 OPTIONAL := soar-thehive-optional
 
 # docker-compose.networks.yml es solo referencia: `docker compose up` no crea redes

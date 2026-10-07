@@ -209,17 +209,17 @@ sysctl -w vm.max_map_count=262144
 #    el siguiente comando se ejecuta en el directorio equivocado (nos pasó varias veces).
 INFRA=/opt/TSI-2026-Infra/infra   # ajustar a donde hayan clonado el repo
 
-for s in identity siem-hids nids mail honeypot targets; do
+for s in identity nids honeypot siem-hids mail targets; do
   [ -f "$INFRA/$s/.env.example" ] && [ ! -f "$INFRA/$s/.env" ] && cp "$INFRA/$s/.env.example" "$INFRA/$s/.env"
 done
 
 cd "$INFRA/identity"   && docker compose up -d   # MFA primero (todo lo demás lo puede usar)
 cd "$INFRA/nids"       && docker compose up -d   # Suricata (antes que Wazuh: le monta su volumen de logs)
+cd "$INFRA/honeypot"   && docker compose up -d   # Cowrie (antes que Wazuh: ídem)
 cd "$INFRA/siem-hids"  && docker compose up -d   # Wazuh: manager+indexer+dashboard
-"$INFRA/siem-hids/configure-manager.sh"          # Suricata, reglas locales, active response, mail
+"$INFRA/siem-hids/configure-manager.sh"          # Suricata+Cowrie, reglas locales, active response, mail
 cd "$INFRA/mail"       && docker compose up -d
 "$INFRA/mail/ensure-accounts.sh"                # casilla soc@lab.local
-cd "$INFRA/honeypot"   && docker compose up -d
 cd "$INFRA/targets"    && docker compose up -d --build   # ssh-client es imagen propia (ssh-victim/)
 # wazo / alerting / soar-thehive-optional: no construidos todavía
 ```
@@ -241,11 +241,12 @@ cd "$INFRA/targets"    && docker compose up -d --build   # ssh-client es imagen 
    router tiene que dejar pasar Servidores/Usuarios → Gestión 1514/1515 y Gestión → DMZ
    25 (mail): el router nftables de `vagrant/` ya lo permite; en OPNsense hay que crear
    las reglas.
-4. **Logs de Cowrie → Wazuh**: Suricata ya está conectado (el volumen `nids_suricata_logs`
-   se monta en `wazuh.manager` y `siem-hids/configure-manager.sh` agrega el
-   `<localfile>` a `ossec.conf`). Falta lo mismo para `cowrie_logs` del honeypot. Ojo:
-   Suricata hoy probablemente solo ve el tráfico dirigido a su IP (`10.10.20.50`) — ver
-   el punto 7.
+4. ~~Logs de Suricata y Cowrie → Wazuh~~ — los dos volúmenes (`nids_suricata_logs`,
+   `honeypot_cowrie_logs`) se montan en `wazuh.manager` y `configure-manager.sh` agrega
+   sus `<localfile>`. Suricata verificado (CU-01, 2026-10-05). Cowrie sumado 2026-10-06
+   (regla 100110, nivel 8: se ve en el dashboard pero no manda mail) — **sin verificar**.
+   Ojo: Suricata hoy probablemente solo ve el tráfico dirigido a su IP (`10.10.20.50`) —
+   ver el punto 7.
 5. **MFA dentro de Keycloak** (TOTP/WebAuthn, RF-12): el contenedor corre pero no hay
    realm/usuarios/MFA configurados todavía.
 6. **Playbooks de Active Response** (scripts) para los 3 casos de RF-06.
