@@ -240,7 +240,7 @@ Fecha: 07/10/2026 · Equipo: Blue · Responsable: fmq203 · Carga: el mismo día
   despliegue.
 - **Incidencia / hallazgo**: La plantilla de SoA dice 79 controles; ISO 27001:2022 tiene
   93. No existe ningún respaldo de datos (RF-13).
-- **Observaciones**: Renzo avisado por fuera de los cambios a sus commits (fmq203).
+- **Observaciones**: fmq203 le avisa a Renzo por fuera de los cambios a sus commits (pendiente al momento del push).
 
 ---
 
