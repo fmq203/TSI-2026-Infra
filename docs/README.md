@@ -8,13 +8,13 @@ Esta carpeta es el **espacio de trabajo** del equipo. Aquí se van copiando y co
 |---|---|---|
 | `00-arquitectura.md` | nueva (diagrama de red + segmentación) | 🔶 borrador |
 | `40-consigna-propia.md` | nueva (escenario empresarial + casos de uso) | 🔶 borrador |
-| `01-Politica-Seguridad.md` | `plantilla/isaca/01-politica-seguridad.md` | ☐ |
+| `01-politica-seguridad.md` | `plantilla/isaca/01-politica-seguridad.md` | 🔶 borrador — falta aprobación de la Dirección (simulada) |
 | `02-Registro-Activos.md` | `plantilla/isaca/02-registro-activos.md` | ☐ |
-| `03-Analisis-Riesgos.md` | `plantilla/isaca/03-analisis-riesgos.md` | ☐ |
+| `03-analisis-riesgos.md` | `plantilla/isaca/03-analisis-riesgos.md` | 🔶 borrador — 13 riesgos (9 altos) con plan de tratamiento; falta aceptación del residual por el RSI |
 | `04-gestion-incidentes.md` | `plantilla/isaca/04-gestion-incidentes.md` | 🔶 borrador — INC-001 (CU-01) cerrado; CU-02 sin ejecutar; CU-03 sin implementar |
 | `06-Plan-Continuidad.md` | `plantilla/isaca/06-plan-continuidad.md` | ☐ |
-| `07-Monitoreo-Logs-SIEM.md` | `plantilla/isaca/07-monitoreo-logs.md` | ☐ |
-| `09-Gestion-Accesos.md` | `plantilla/isaca/09-gestion-accesos.md` | ☐ |
+| `07-monitoreo-logs.md` | `plantilla/isaca/07-monitoreo-logs.md` | 🔶 borrador — 1 de 8 fuentes de log verificada; retención de 90 días sin configurar |
+| `09-gestion-accesos.md` | `plantilla/isaca/09-gestion-accesos.md` | 🔶 política definida — MFA sin implementar; decidir cómo proteger el dashboard de Wazuh (§1.1) |
 | `10-Gestion-Vulnerabilidades.md` | `plantilla/isaca/10-gestion-vulnerabilidades.md` | ☐ |
 | `11-SoA-Plan-Tratamiento.md` | `plantilla/isaca/11-soa-plan-tratamiento.md` | ☐ |
 | `12-Notificacion-Incidentes.md` | `plantilla/isaca/12-notificacion-incidentes.md` | ☐ |
@@ -26,7 +26,7 @@ Esta carpeta es el **espacio de trabajo** del equipo. Aquí se van copiando y co
 
 | Archivo | Estado |
 |---|---|
-| `excel/01-controles-mcu5-perfil-avanzado.xlsx` | ☐ |
+| `excel/01-controles-mcu5-perfil-avanzado.xlsx` | 🔶 47 controles: 5 implementados, 26 parciales, 15 pendientes, 1 N.A. (capacitación). Hoja Resumen por función |
 | `excel/02-registro-activos-mcu5.xlsx` | 🔶 22 activos (A01-A22): hosts, servicios, datos, consolas y las 4 VLANs. Revisar dueños y clasificación entre los dos |
 | `excel/03-matriz-raci-mcu5.xlsx` | 🔶 16 procesos de seguridad de la red (una sola A por proceso) + hoja `Roles` con propuesta de quién cubre cada rol — confirmar entre los dos |
 | `excel/04-bitacora-planilla.xlsx` | 🔶 mismo contenido que `99-bitacora-trabajo.md` (lagunas en gris). Se carga a diario desde el 07/10 |

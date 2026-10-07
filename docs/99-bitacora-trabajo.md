@@ -209,6 +209,24 @@ Fecha: 07/10/2026 · Equipo: Blue · Responsable: fmq203 · Carga: el mismo día
 - **Observaciones**: Asignación de roles del equipo y dueños de activos pendiente de
   revisar entre los dos.
 
+### Actividad: Excel de controles MCU 5.0 y documentos ISACA 01, 03, 07, 09
+
+- **Fase**: Documentación
+- **Duración**: no registrada
+- **Tarea realizada**: `excel/01-controles-mcu5-perfil-avanzado.xlsx` (47 controles con
+  aplica, estado y evidencia, + hoja Resumen con fórmulas). Política (`01`), análisis de
+  riesgos (`03`, 13 riesgos), monitoreo y logs (`07`), gestión de accesos (`09`).
+- **Resultado**: Borradores. No se pudo recalcular el Excel con LibreOffice (no está
+  instalado): las fórmulas se verificaron en Python y el libro quedó marcado para
+  recalcular al abrirse.
+- **Incidencia / hallazgo**: Al revisar el repo para calificar controles: (1) Suricata
+  solo carga las 5 reglas propias, ningún ruleset público (RF-03); (2) no hay retención
+  de 90 días configurada (RF-15); (3) 4 imágenes en `:latest`; (4) el router deja salir a
+  Internet desde todas las VLAN, incluida Servidores (camino de exfiltración, CU-05); (5)
+  el dashboard de Wazuh sin plugin de seguridad no puede autenticar contra Keycloak:
+  hay que elegir cómo ponerle MFA.
+- **Observaciones**: Todo quedó como riesgo con tratamiento en `03-analisis-riesgos.md`.
+
 ---
 
 ## 3. Tabla resumen (formato Excel `04-bitacora-planilla.xlsx`)
@@ -225,6 +243,7 @@ Fecha: 07/10/2026 · Equipo: Blue · Responsable: fmq203 · Carga: el mismo día
 | 06/10/2026 | 22:47 | Impl. | R. Rampoldi | Agente Wazuh en targets | compose | Revertido — `ecf697c` | Agente aislado del blanco | Carga diferida |
 | 07/10/2026 | 01:56-01:59 | Prueba/Doc. | fmq203 | Corrección de regresiones | git diff | Éxito (sin desplegar) — `543c519`, `1e3e5a2` | 2 regresiones | Mismo día |
 | 07/10/2026 | 02:08- | Doc. | fmq203 | Incidentes, bitácora, Excel 02/03/04 | — | Borradores — `0ba84e1`, `b3ba156`, … | Plazos BCU/URCDP sin fuente | Mismo día |
+| 07/10/2026 | — | Doc. | fmq203 | Excel 01 + ISACA 01, 03, 07, 09 | — | Borradores | 5 brechas nuevas (ver entrada) | Mismo día |
 
 ---
 
