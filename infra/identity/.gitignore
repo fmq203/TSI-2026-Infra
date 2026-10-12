@@ -1,0 +1,4 @@
+# Certificados privados de laboratorio Keycloak
+certs/*.key
+certs/*.csr
+certs/*.srl

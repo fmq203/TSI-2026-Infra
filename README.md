@@ -182,3 +182,91 @@ Cómo llegar a ellas desde tu máquina: `vagrant/README.md` → "Cómo entrar a 
 
 - **Equipo A (Blue Team):** construye la infraestructura de defensa y rinde la auditoría (semana del 14/09 al 14/10).
 - **Equipo B (Red Team):** ataca la infraestructura entregada (28/10 → 09/11) y emite informe.
+
+---
+
+## Actualización de avances — 11/10/2026
+
+> Esta sección se agrega como actualización del estado del proyecto sin modificar el contenido histórico anterior del README.
+
+### Avances realizados
+
+- **CU-01 — Reconocimiento / escaneo:** ✅ completado y verificado de punta a punta.
+  - Prueba con Nmap.
+  - Detección en Suricata con SID `1000001`.
+  - Correlación en Wazuh con regla `100100`, nivel 10.
+  - Evidencia guardada.
+
+- **CU-02 — Fuerza bruta SSH:** ✅ completado y verificado.
+  - Agente `ssh-client` activo en Wazuh.
+  - Detección con regla `5712`.
+  - Active Response `firewall-drop`.
+  - Bloqueo efectivo de la IP atacante `10.10.30.50`.
+  - Evidencia guardada.
+
+- **CU-03 — Webshell / FIM:** ✅ completado y verificado.
+  - Agente `webapp` enrolado en Wazuh como ID `003`.
+  - FIM activo sobre `/var/www/html`.
+  - Regla local `100200`, nivel 12.
+  - Active Response `isolate-webapp`.
+  - Aislamiento automático del servidor web.
+  - Comunicación con Wazuh preservada por TCP `1514`.
+  - Evidencia guardada.
+
+- **MFA en Keycloak:** 🟡 avance parcial.
+  - Se creó el realm `lab`.
+  - Se creó el usuario de demo `admin-lab`.
+  - TOTP configurado y probado correctamente.
+  - Se validó login con usuario + contraseña + código TOTP.
+  - WebAuthn/Passkey fue probado, pero queda pendiente porque requiere HTTPS.
+  - Se generaron certificados de laboratorio para una futura configuración HTTPS.
+  - Se configuró acceso temporal desde Windows mediante `keycloak-proxy` + túnel SSH.
+
+### Datos de prueba de Keycloak
+
+> Credenciales solo para el laboratorio/demo.
+
+```text
+Realm: lab
+Usuario: admin-lab
+Contraseña: Prueba123
+Email: admin-lab@lab.local
+```
+
+Para acceder desde Windows, mantener abierto el túnel:
+
+```bash
+cd ~/TSI/TSI-2026-Infra/vagrant
+VAGRANT_PREFER_SYSTEM_BIN=0 vagrant ssh docker-host -- -L 8080:127.0.0.1:18080
+```
+
+Y utilizar:
+
+```text
+Cuenta:
+http://auth.lab.local:8080/realms/lab/account/
+
+Administración:
+http://auth.lab.local:8080/admin/
+```
+
+### Pendientes actualizados
+
+1. **WebAuthn/U2F en Keycloak:** completar cuando se implemente HTTPS/TLS.
+2. **Alertas por correo:** verificar recepción real en `soc@lab.local` y guardar evidencia.
+3. **Cowrie:** comprobar detección/correlación final en Wazuh/dashboard.
+4. **Backups y restauración:** ejecutar una prueba real y documentarla.
+5. **Dashboards y KPIs:** dejar evidencia de búsquedas/alertas y completar MTTD, MTTR y demás indicadores.
+6. **Documentación final:** actualizar incidentes, monitoreo, accesos, SoA/Excel MCU, bitácora e informe Blue Team con los resultados reales.
+
+### Estado general al 11/10/2026
+
+```text
+CU-01  ✅ Completo
+CU-02  ✅ Completo
+CU-03  ✅ Completo
+TOTP   ✅ Completo
+WebAuthn/U2F  ⏳ Pendiente
+Correo / Cowrie / Backup / KPIs / documentación final  ⏳ Pendiente
+```
+

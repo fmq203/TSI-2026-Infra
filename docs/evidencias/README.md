@@ -4,10 +4,11 @@
 > notificación, que es lo que el auditor pide ver (LETRA.md §6.6) y lo que referencian
 > `04-gestion-incidentes.md`, `07-monitoreo-logs.md` y el Excel de controles.
 >
-> Al 07/10/2026 está **vacía de artefactos**: este README es el procedimiento para
-> llenarla. Cada integrante lo corre en su propio despliegue (`vagrant up`, ver
-> `../../vagrant/README.md`), captura lo que se indica y lo guarda con el nombre exacto
-> de la columna "Archivo".
+> Al 11/10/2026 ya se validaron y documentaron **CU-01**, **CU-02** y **CU-03** con evidencia real.
+> CU-01 quedó verificado de punta a punta como Nmap → Suricata → Wazuh; CU-02 como
+> fuerza bruta SSH → Wazuh → Active Response `firewall-drop` → bloqueo efectivo; y CU-03 como
+> archivo PHP sospechoso → FIM → regla local 100200 → Active Response `isolate-webapp` → aislamiento del servidor con comunicación al SIEM preservada.
+> Las capturas generadas se detallan en el índice de evidencias al final de este archivo.
 
 ## Convención de nombres
 
@@ -28,23 +29,69 @@ Capturas de pantalla en `.png`; volcados de consola en `.txt`; correos en `.eml`
 
 ---
 
-## CU-01 — Reconocimiento contra la DMZ (INC-2026-001)
+## CU-01 — Reconocimiento contra la DMZ (INC-2026-001) ✅ VERIFICADO
 
-**Cadena a evidenciar:** escaneo → Suricata (SIDs 1000001/1000005) → Wazuh (86601 →
-100100, nivel 10) → dashboard + mail al SOC.
+**Cadena validada:** escaneo SYN → Suricata (SID 1000001) → Wazuh (regla 100100, nivel 10).
 
-### 1. Lanzar el ataque (desde el router, su tráfico no pasa por el filtro)
+### 1. Prueba ejecutada
+
+Desde la VM `router` se verificó primero la conectividad contra la DMZ:
 
 ```bash
-vagrant ssh router -- "sudo apt-get install -y -qq nmap && ping -c 20 -i 0.2 10.10.20.50 && sudo nmap -sS -p 1-1000 10.10.20.50"
+ping -c 20 -i 0.2 10.10.20.50
 ```
 
-**Anotar la hora UTC exacta del ataque** (`date -u`) — hace falta para el MTTD (KPI).
+Luego se ejecutó el reconocimiento:
 
-### 2. Capturar
+```bash
+sudo nmap -sS -p 1-1000 10.10.20.50
+```
 
-| # | Qué muestra | Cómo | Archivo |
-|---|---|---|---|
+Resultado: el host `10.10.20.50` respondió como activo y se completó el barrido SYN sobre los primeros 1000 puertos TCP.
+
+### 2. Detección en Suricata
+
+Se verificó la generación de alertas en `eve.json` con las firmas propias de CU-01:
+
+```bash
+docker run --rm -v nids_suricata_logs:/logs:ro alpine \
+  sh -c 'grep -E "\"signature_id\":100000[1-5]" /logs/eve.json | tail -10'
+```
+
+Se observó:
+
+- `signature_id`: `1000001`
+- Firma: `CU-01 Posible escaneo de puertos TCP (muchos SYN por origen)`
+- `src_ip`: `10.10.20.254`
+- `dest_ip`: `10.10.20.50`
+
+### 3. Correlación en Wazuh
+
+Se comprobó que Wazuh procesó las alertas de Suricata:
+
+```bash
+docker exec wazuh.manager grep '"id":"100100"' \
+  /var/ossec/logs/alerts/alerts.json | tail -5
+```
+
+Resultado observado:
+
+- Regla Wazuh: `100100`
+- Nivel: `10`
+- Grupo: `suricata`
+- Descripción asociada a CU-01
+- MITRE ATT&CK: reconocimiento / Network Service Discovery
+
+### 4. Evidencia capturada
+
+- `01_ping_conectividad_dmz.png`
+- `02_reconocimiento_nmap_dmz.png`
+- `03_suricata_sid_1000001.png`
+- `04_wazuh_regla_100100.png`
+
+**Estado CU-01:** COMPLETADO Y VERIFICADO.
+
+---|---|---|---|
 | 1 | Suricata generó la alerta | `docker exec suricata grep '"event_type":"alert"' /var/log/suricata/eve.json \| tail -5` | `AAAA-MM-DD_CU-01_suricata-eve.txt` |
 | 2 | Wazuh la procesó (regla 100100) | `docker exec wazuh.manager grep '100100' /var/ossec/logs/alerts/alerts.json \| tail -3` | `AAAA-MM-DD_CU-01_wazuh-alertjson.txt` |
 | 3 | **Alerta en el dashboard** | Threat Hunting, filtro `rule.id:100100` (o `data.alert.signature_id:1000*`). Mostrar fecha, `src_ip`, descripción y MITRE T1046 | `AAAA-MM-DD_CU-01_dashboard.png` |
@@ -57,24 +104,110 @@ vagrant ssh router -- "sudo apt-get install -y -qq nmap && ping -c 20 -i 0.2 10.
 
 ---
 
-## CU-02 — Fuerza bruta SSH + respuesta automática (INC-2026-002)
+## CU-02 — Fuerza bruta SSH + respuesta automática (INC-2026-002) ✅ VERIFICADO
 
-**Cadena:** 12 logins fallidos → agente Wazuh → reglas sshd 5712/5763 (nivel 10) →
-Active Response `firewall-drop` (regla 651, DROP 10 min) → mail al SOC.
+**Cadena validada:** intentos SSH fallidos → agente Wazuh → regla 5712 → Active Response `firewall-drop` → bloqueo de la IP atacante.
 
-### 1. Verificar enrolamiento y lanzar
+### 1. Agente Wazuh
 
-```bash
-docker exec wazuh.manager /var/ossec/bin/agent_control -l         # "ssh-client" Active
-vagrant ssh router -- "sudo apt-get install -y -qq sshpass && for i in \$(seq 1 12); do sshpass -p incorrecta\$i ssh -p 2222 -o StrictHostKeyChecking=no labuser@10.10.30.10 true; done"
+Se desplegó el `ssh-client` con la imagen propia:
+
+```text
+tsi/ssh-victim:4.9.0
 ```
 
-Anotar hora UTC del ataque y del DROP (para el MTTR).
+El contenedor incluye OpenSSH y el agente Wazuh embebido.
 
-### 2. Capturar
+Se verificó el enrolamiento:
 
-| # | Qué muestra | Cómo | Archivo |
-|---|---|---|---|
+```bash
+docker exec wazuh.manager /var/ossec/bin/agent_control -l
+```
+
+Resultado:
+
+```text
+ID: 002, Name: ssh-client, IP: any, Active
+```
+
+También quedaron activos FIM, SCA y rootcheck.
+
+### 2. Active Response configurado
+
+Se confirmó en `/var/ossec/etc/ossec.conf`:
+
+```xml
+<active-response>
+  <command>firewall-drop</command>
+  <location>local</location>
+  <rules_id>5712,5763</rules_id>
+  <timeout>600</timeout>
+</active-response>
+```
+
+### 3. Prueba de fuerza bruta controlada
+
+Para no bloquear el gateway del laboratorio se utilizó un contenedor atacante temporal con IP `10.10.30.50`.
+
+Desde ese contenedor se realizaron múltiples intentos fallidos contra:
+
+```text
+10.10.30.10:2222
+```
+
+La detección se verificó con:
+
+```bash
+docker exec wazuh.manager grep -E '"id":"(5712|5763)"' \
+  /var/ossec/logs/alerts/alerts.json | tail -10
+```
+
+Wazuh generó la regla:
+
+- `5712`
+- Nivel `10`
+- Descripción: `sshd: brute force trying to get access to the system. Non existent user.`
+- IP origen: `10.10.30.50`
+
+### 4. Respuesta automática
+
+En el agente víctima se verificó:
+
+```bash
+docker exec target-ssh-client tail -30 /var/ossec/logs/active-responses.log
+```
+
+Se observó la ejecución de:
+
+```text
+active-response/bin/firewall-drop
+```
+
+sobre la IP atacante `10.10.30.50`.
+
+Luego se repitió una conexión SSH desde el atacante:
+
+```bash
+ssh -o ConnectTimeout=3 -p 2222 usuariofalso@10.10.30.10
+```
+
+Resultado:
+
+```text
+ssh: connect to host 10.10.30.10 port 2222: Connection timed out
+```
+
+Esto confirmó que el bloqueo fue aplicado correctamente durante el período configurado de 600 segundos.
+
+### 5. Evidencia capturada
+
+- `01_alerta_wazuh_regla_5712.png`
+- `02_active_response_firewall_drop.png`
+- `03_bloqueo_ssh_timeout.png`
+
+**Estado CU-02:** COMPLETADO Y VERIFICADO.
+
+---|---|---|---|
 | 1 | Detección (regla 5763/5712) | `docker exec wazuh.manager grep -E '"id":"(5763\|5712)"' /var/ossec/logs/alerts/alerts.json \| tail -2` | `AAAA-MM-DD_CU-02_deteccion.txt` |
 | 2 | **Respuesta** — IP bloqueada | `docker exec target-ssh-client iptables -L INPUT -n` (muestra el DROP) | `AAAA-MM-DD_CU-02_iptables.txt` |
 | 3 | Log del Active Response | `docker exec target-ssh-client tail /var/ossec/logs/active-responses.log` | `AAAA-MM-DD_CU-02_active-response.txt` |
@@ -90,17 +223,200 @@ Anotar hora UTC del ataque y del DROP (para el MTTR).
 
 ---
 
-## CU-03 — Webshell (INC-2026-003)
+## CU-03 — Webshell + FIM + aislamiento automático (INC-2026-003) ✅ VERIFICADO
 
-**No implementado** (falta agente Wazuh con FIM sobre el webroot de `target-webapp`).
-Cuando esté, el esquema es el mismo: crear un archivo en `/var/www/html` dentro del
-contenedor de la app → alerta de FIM (`syscheck`) → playbook de aislamiento → mail.
-Dejar la evidencia como `AAAA-MM-DD_CU-03_*`.
+**Cadena validada:** archivo PHP agregado al webroot → FIM (`syscheck`) → regla base 554 → regla local CU-03 `100200` (nivel 12) → Active Response `isolate-webapp` → aislamiento del servidor web manteniendo comunicación con Wazuh por TCP 1514.
+
+### 1. Agente Wazuh y FIM sobre el webroot
+
+Se agregó un agente Wazuh al contenedor `target-webapp` y se verificó su enrolamiento:
+
+```bash
+docker exec wazuh.manager /var/ossec/bin/agent_control -l
+```
+
+Resultado:
+
+```text
+ID: 003, Name: webapp, IP: any, Active
+```
+
+El agente quedó configurado para monitorear en tiempo real el webroot:
+
+```xml
+<directories realtime="yes" check_all="yes">/var/www/html</directories>
+```
+
+Esto permitió detectar altas y modificaciones de archivos dentro de la aplicación.
+
+### 2. Prueba de detección FIM
+
+Se creó un archivo PHP de prueba dentro del webroot:
+
+```bash
+docker exec target-webapp bash -c 'echo "<?php echo \"CU03 AISLAMIENTO\"; ?>" > /var/www/html/cu03-isolation-test.php'
+```
+
+La detección inicial de FIM se realizó mediante la regla estándar:
+
+- Regla base: `554`
+- Descripción: `File added to the system.`
+- Agente: `webapp`
+- Ruta: `/var/www/html/cu03-isolation-test.php`
+
+### 3. Regla local específica CU-03
+
+Se agregó una regla local para elevar los archivos PHP agregados al webroot:
+
+```xml
+<group name="local,syscheck,cu03,">
+  <rule id="100200" level="12">
+    <if_sid>554</if_sid>
+    <field name="file" type="pcre2">^/var/www/html/.*\.php$</field>
+    <description>CU-03 Webshell: archivo PHP agregado al webroot: $(file)</description>
+    <mitre>
+      <id>T1505.003</id>
+    </mitre>
+  </rule>
+</group>
+```
+
+La alerta resultante mostró:
+
+- Regla Wazuh: `100200`
+- Nivel: `12`
+- Agente: `webapp`
+- IP: `10.10.10.10`
+- Archivo detectado: `/var/www/html/cu03-isolation-test.php`
+- MITRE ATT&CK: `T1505.003` Web Shell
+
+### 4. Active Response de aislamiento
+
+Se creó el script:
+
+```text
+/var/ossec/active-response/bin/isolate-webapp
+```
+
+y se configuró en el manager:
+
+```xml
+<command>
+  <name>isolate-webapp</name>
+  <executable>isolate-webapp</executable>
+  <timeout_allowed>yes</timeout_allowed>
+</command>
+
+<active-response>
+  <command>isolate-webapp</command>
+  <location>local</location>
+  <rules_id>100200</rules_id>
+  <timeout>600</timeout>
+</active-response>
+```
+
+Al dispararse la regla `100200`, el Active Response ejecutó:
+
+```text
+CU03 isolate-webapp: Starting isolation
+CU03 isolate-webapp: Webapp isolated, Wazuh access preserved
+```
+
+### 5. Verificación del aislamiento
+
+Después de la respuesta automática se verificó la tabla de rutas del `target-webapp`:
+
+```bash
+docker exec target-webapp ip route
+```
+
+La ruta por defecto fue eliminada y se mantuvo únicamente:
+
+```text
+10.10.10.0/24 dev eth0 ...
+10.10.90.10 via 10.10.10.254 dev eth0
+```
+
+Esto dejó al servidor web aislado del resto de las redes pero conservando una ruta específica hacia el Wazuh Manager.
+
+También se comprobó el aislamiento intentando llegar a la DMZ:
+
+```bash
+docker exec target-webapp ping -c 2 -W 2 10.10.20.50
+```
+
+Resultado:
+
+```text
+ping: sendto: Network is unreachable
+```
+
+### 6. Comunicación con Wazuh preservada
+
+Se verificó directamente el puerto TCP 1514 hacia el manager:
+
+```bash
+docker exec target-webapp bash -c 'echo > /dev/tcp/10.10.90.10/1514 && echo "WAZUH 1514 OK" || echo "WAZUH 1514 NO"'
+```
+
+Resultado:
+
+```text
+WAZUH 1514 OK
+```
+
+Además, el agente continuó figurando como:
+
+```text
+ID: 003, Name: webapp, IP: any, Active
+```
+
+Por lo tanto, el aislamiento no impidió que el servidor siguiera reportando al SIEM.
+
+### 7. Evidencia capturada
+
+- `01_fim_configurado_webroot.png`
+- `02_fim_detecta_archivo_php.png`
+- `03_regla_cu03_100200_nivel12.png`
+- `04_agente_webapp_y_script_aislamiento.png`
+- `05_active_response_cu03_configurado.png`
+- `06_alerta_final_cu03.png`
+- `07_active_response_aislamiento.png`
+- `08_rutas_webapp_aislado.png`
+- `09_agente_webapp_activo_durante_aislamiento.png`
+- `10_wazuh_1514_preservado.png`
+
+**Estado CU-03:** COMPLETADO Y VERIFICADO.
 
 ---
 
-## Índice de evidencias (completar a medida que se agregan)
+## Índice de evidencias
 
 | Archivo | Caso | Qué prueba | Fecha captura |
 |---|---|---|---|
-| _(vacío al 07/10/2026)_ | | | |
+| `01_ping_conectividad_dmz.png` | CU-01 | Conectividad desde router hacia `10.10.20.50` | 11/10/2026 |
+| `02_reconocimiento_nmap_dmz.png` | CU-01 | Escaneo SYN con Nmap contra la DMZ | 11/10/2026 |
+| `03_suricata_sid_1000001.png` | CU-01 | Suricata detecta el escaneo con SID `1000001` | 11/10/2026 |
+| `04_wazuh_regla_100100.png` | CU-01 | Wazuh correlaciona la alerta con regla `100100` nivel 10 | 11/10/2026 |
+| `01_alerta_wazuh_regla_5712.png` | CU-02 | Wazuh detecta fuerza bruta SSH con regla `5712` | 11/10/2026 |
+| `02_active_response_firewall_drop.png` | CU-02 | Ejecución de Active Response `firewall-drop` sobre `10.10.30.50` | 11/10/2026 |
+| `03_bloqueo_ssh_timeout.png` | CU-02 | Verificación del bloqueo mediante timeout SSH | 11/10/2026 |
+| `01_fim_configurado_webroot.png` | CU-03 | FIM configurado en tiempo real sobre `/var/www/html` | 11/10/2026 |
+| `02_fim_detecta_archivo_php.png` | CU-03 | FIM detecta la creación de un archivo PHP en el webroot | 11/10/2026 |
+| `03_regla_cu03_100200_nivel12.png` | CU-03 | Regla local `100200` nivel 12 detecta posible webshell | 11/10/2026 |
+| `04_agente_webapp_y_script_aislamiento.png` | CU-03 | Agente `webapp` activo y script `isolate-webapp` disponible | 11/10/2026 |
+| `05_active_response_cu03_configurado.png` | CU-03 | Configuración del comando y Active Response para regla `100200` | 11/10/2026 |
+| `06_alerta_final_cu03.png` | CU-03 | Alerta final por `cu03-isolation-test.php` | 11/10/2026 |
+| `07_active_response_aislamiento.png` | CU-03 | Ejecución de `isolate-webapp` y aislamiento automático | 11/10/2026 |
+| `08_rutas_webapp_aislado.png` | CU-03 | Ruta por defecto eliminada y DMZ inaccesible | 11/10/2026 |
+| `09_agente_webapp_activo_durante_aislamiento.png` | CU-03 | Agente ID 003 permanece `Active` durante el aislamiento | 11/10/2026 |
+| `10_wazuh_1514_preservado.png` | CU-03 | Comunicación TCP 1514 con Wazuh preservada | 11/10/2026 |
+
+### Estado resumido
+
+| Caso | Estado |
+|---|---|
+| CU-01 — Reconocimiento contra la DMZ | ✅ Completado y verificado |
+| CU-02 — Fuerza bruta SSH + respuesta automática | ✅ Completado y verificado |
+| CU-03 — Webshell + FIM + aislamiento automático | ✅ Completado y verificado |
+

@@ -16,6 +16,19 @@
       <id>T1046</id>
     </mitre>
   </rule>
+</group>
+
+<group name="local,syscheck,cu03,">
+
+  <!-- CU-03: archivo PHP agregado al webroot -->
+  <rule id="100200" level="12">
+    <if_sid>554</if_sid>
+    <field name="file" type="pcre2">^/var/www/html/.*\.php$</field>
+    <description>CU-03 Webshell: archivo PHP agregado al webroot: $(file)</description>
+    <mitre>
+      <id>T1505.003</id>
+    </mitre>
+  </rule>
 
 </group>
 <group name="cowrie,honeypot,">

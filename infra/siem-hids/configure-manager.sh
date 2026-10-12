@@ -62,7 +62,22 @@ append_block "active-response-cu02" \
   '    <rules_id>5712,5763</rules_id>' \
   '    <timeout>600</timeout>' \
   '  </active-response>'
+# 3b. CU-03: comando de aislamiento del webapp
+append_block "command-cu03" \
+'  <command>' \
+'    <name>isolate-webapp</name>' \
+'    <executable>isolate-webapp</executable>' \
+'    <timeout_allowed>yes</timeout_allowed>' \
+'  </command>'
 
+# CU-03: archivo PHP agregado al webroot -> aislar agente afectado
+append_block "active-response-cu03" \
+'  <active-response>' \
+'    <command>isolate-webapp</command>' \
+'    <location>local</location>' \
+'    <rules_id>100200</rules_id>' \
+'    <timeout>600</timeout>' \
+'  </active-response>'
 # 4. Mail: se editan los valores que ya trae el <global> por defecto.
 before=$(docker exec $C md5sum $CONF)
 docker exec $C sed -i \

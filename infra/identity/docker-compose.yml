@@ -42,7 +42,6 @@ services:
       # chocar con la .5 del propio docker-host, que Docker no conoce.
       net_mgmt:
         ipv4_address: ${KEYCLOAK_IP:-10.10.90.20}
-
 networks:
   net_mgmt:
     external: true

@@ -24,19 +24,27 @@ services:
         ipv4_address: ${APP_DB_IP:-10.10.10.11}
 
   webapp:
-    image: vulnerables/web-dvwa:latest
+    build:
+      context: ./web-victim
+    image: tsi/web-victim:4.9.0
     container_name: target-webapp
     restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
     depends_on:
       - app-db
     environment:
       MYSQL_HOSTNAME: app-db
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set in .env}
+      WAZUH_MANAGER: ${WAZUH_MANAGER_IP:-10.10.90.10}
+      WAZUH_AGENT_NAME: webapp
     ports:
       - "8081:80"
     networks:
       net_srv:
         ipv4_address: ${WEBAPP_IP:-10.10.10.10}
+    volumes:
+      - webapp_ossec_etc:/var/ossec/etc
 
   ssh-client:
     # Imagen propia (ssh-victim/): OpenSSH en 2222 + agente Wazuh embebido. Blanco de
@@ -80,3 +88,4 @@ networks:
 volumes:
   target_db_data:
   ssh_victim_ossec_etc:
+  webapp_ossec_etc:
