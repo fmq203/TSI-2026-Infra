@@ -55,8 +55,8 @@ La probabilidad y el impacto son valoración del equipo, a revisar entre los dos
 |---|---|---|---|---|
 | R01 | A06-A08 Wazuh, A12 Keycloak | Acceso no autorizado a consolas de seguridad | Externo / interno, deliberado | Dashboard de Wazuh sin login; MFA de Keycloak sin configurar (`infra/siem-hids/docker-compose.yml`) |
 | R02 | A14, A17 credenciales | Uso de credenciales por defecto | Externo / interno, deliberado | Contraseñas `changeme` en `.env.example` que se copian tal cual a `.env` con `make up` |
-| R03 | A05 puesto de usuario | Fuerza bruta SSH | Interno, deliberado | Contraseña débil (a propósito para CU-02); respuesta automática sin verificar |
-| R04 | A03 app, A04 base de clientes | Webshell / inyección en la app | Externo, deliberado | App vulnerable (DVWA); sin FIM ni agente en `target-webapp` |
+| R03 | A05 puesto de usuario | Fuerza bruta SSH | Interno, deliberado | Contraseña débil (a propósito para CU-02); respuesta automática **verificada 11/10** (`firewall-drop`) |
+| R04 | A03 app, A04 base de clientes | Webshell / inyección en la app | Externo, deliberado | App vulnerable (DVWA); FIM + agente en `target-webapp` **implementados y verificados 11/10** (regla 100200, `isolate-webapp`) |
 | R05 | A04 base de clientes | Exfiltración de datos de clientes (DNS u otro canal) | Externo / interno, deliberado | El router deja salir a Internet desde **todas** las VLAN, incluida Servidores (`vagrant/provision-router.sh:52`); sin detección de CU-05 |
 | R06 | A09 Suricata, A20 DMZ | Reconocimiento no detectado | Externo, deliberado | Suricata solo ve el tráfico dirigido a su IP (sin mirror/SPAN) |
 | R07 | A09 Suricata | Ataques conocidos sin firma | Externo, deliberado | Solo 5 reglas propias; ningún ruleset público cargado (`infra/nids/suricata.yaml`) |
@@ -86,8 +86,8 @@ Catastrófico) y matriz 5×5 según la plantilla:
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | R01 | Acceso no autorizado a consolas de seguridad | A06-A08, A12 | 4 | 5 | **A** | 20 | M | Admin IAM | T01 | Abierto | 07/10/2026 |
 | R02 | Credenciales por defecto en servicios | A14, A17 | 4 | 5 | **A** | 20 | M | Admin de infraestructura | T02 | Abierto | 07/10/2026 |
-| R03 | Fuerza bruta SSH contra puestos de usuario | A05 | 5 | 3 | **A** | 15 | M | Analista SOC | T03 | En tratamiento | 07/10/2026 |
-| R04 | Webshell / inyección en la app de préstamos | A03, A04 | 3 | 5 | **A** | 15 | M | Analista SOC | T04 | Abierto | 07/10/2026 |
+| R03 | Fuerza bruta SSH contra puestos de usuario | A05 | 5 | 3 | **A** | 15 | M | Analista SOC | T03 | Mitigado (control verificado 11/10) | 11/10/2026 |
+| R04 | Webshell / inyección en la app de préstamos | A03, A04 | 3 | 5 | **A** | 15 | M | Analista SOC | T04 | Mitigado (control verificado 11/10) | 11/10/2026 |
 | R05 | Exfiltración de datos de clientes | A04 | 3 | 5 | **A** | 15 | M | Admin de red | T05 | Abierto | 07/10/2026 |
 | R06 | Reconocimiento no detectado (sin mirror) | A09, A20 | 4 | 3 | **A** | 12 | M | Admin de red | T06 | Abierto | 07/10/2026 |
 | R07 | Ataques conocidos sin firma | A09 | 4 | 3 | **A** | 12 | M | Analista SOC | T07 | Abierto | 07/10/2026 |
@@ -107,8 +107,8 @@ resultado.
 |---|---|---|---|---|
 | T01 → R01 | Realm de FinSegura con MFA obligatorio (TOTP + WebAuthn); login en el dashboard de Wazuh delegado en Keycloak (proxy de autenticación u OIDC) | `09-gestion-accesos.md`; RF-12 | 1 | 14/10/2026 |
 | T02 → R02 | Cambiar todas las contraseñas de laboratorio y documentar que `.env.example` no es para uso real | README → "Seguridad" | 1 | 14/10/2026 |
-| T03 → R03 | Verificar Active Response `firewall-drop` (CU-02) de punta a punta con evidencia | `04-gestion-incidentes.md` INC-2026-002 | 1 | 08/10/2026 |
-| T04 → R04 | Agente Wazuh con FIM sobre el webroot de la app + playbook de aislamiento (CU-03) | RF-06, RF-17 | 2 | 14/10/2026 |
+| T03 → R03 | ~~Verificar Active Response `firewall-drop` (CU-02) de punta a punta con evidencia~~ — **hecho 11/10** | `04-gestion-incidentes.md` INC-2026-002 | — | ✅ 11/10/2026 |
+| T04 → R04 | ~~Agente Wazuh con FIM sobre el webroot de la app + playbook de aislamiento (CU-03)~~ — **hecho 11/10** | RF-06, RF-17 | — | ✅ 11/10/2026 |
 | T05 → R05 | Restringir la salida a Internet de la VLAN Servidores (solo lo necesario, DNS por resolver interno) + regla de detección de CU-05 | Reglas del router; Suricata | 2 | 14/10/2026 |
 | T06 → R06 | Decidir mirror de tráfico (bridge del hipervisor) o Suricata en OPNsense (`os-suricata`) | `infra/README.md` "Qué falta" §7 | 2 | 14/10/2026 |
 | T07 → R07 | Cargar ruleset público (Emerging Threats Open vía `suricata-update`) además de las reglas propias | RF-03 | 2 | 14/10/2026 |

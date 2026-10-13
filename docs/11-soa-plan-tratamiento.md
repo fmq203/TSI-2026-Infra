@@ -91,7 +91,7 @@ evidencia en el repo; **Parcial** = existe pero incompleto o sin verificar;
 | A.5.23 | Seguridad en servicios en la nube | Sí | — | GitHub: repo público sin secretos (.gitignore) | Parcial — sin escaneo de secretos (03 R13) |
 | A.5.24 | Planificación de la gestión de incidentes | Sí | — | docs/04 §1-3 | Parcial — borrador |
 | A.5.25 | Evaluación y decisión sobre eventos | Sí | — | docs/04 §1 (S0-S3) | Parcial |
-| A.5.26 | Respuesta a incidentes | Sí | — | docs/04 §3.2; Active Response | Parcial — CU-02 sin verificar |
+| A.5.26 | Respuesta a incidentes | Sí | — | docs/04 §3.2; Active Response (`firewall-drop`, `isolate-webapp`) | Implementado — CU-02 y CU-03 verificados (11/10) |
 | A.5.27 | Aprendizaje de los incidentes | Sí | — | docs/04 §5; brain/LEARNINGS.md | Implementado |
 | A.5.28 | Recolección de evidencia | Sí | — | docs/evidencias/README.md | Parcial — sin artefactos |
 | A.5.29 | Seguridad durante una disrupción | Sí | — | docs/06 §4 | Pendiente |
@@ -170,16 +170,18 @@ Base: hoja "Resumen" de `excel/01-controles-mcu5-perfil-avanzado.xlsx` (47 contr
 
 | Función MCU 5.0 | Perfil objetivo | Evidencia que lo sostiene | Controles (impl / parcial / pend / N.A.) | Madurez actual | Acciones prioritarias |
 |---|---|---|---|---|---|
-| Gobernar | Avanzado (3) | Política (01), RACI (excel/03), decisiones fechadas | 0 / 7 / 1 / 0 | **1** | Aprobar la política; asignar RSI; SoA aprobada |
+| Gobernar | Avanzado (3) | Política (01), RACI (excel/03), decisiones fechadas | 0 / 8 / 0 / 0 | **1** | Aprobar la política; asignar RSI; SoA aprobada |
 | Identificar | Avanzado (3) | Inventario A01-A22, riesgos (03) | 1 / 5 / 2 / 0 | **1** | Escaneo de vulnerabilidades (10); aceptación del residual |
-| Proteger | Avanzado (3) | Segmentación en 4 VLANs con reglas | 1 / 4 / 6 / 1 | **1** | MFA en consolas (T01); credenciales (T02); respaldos (06) |
-| Detectar | Avanzado (3) | CU-01 verificado; reglas de umbral | 2 / 5 / 1 / 0 | **2** | Fuentes de log al SIEM; ruleset público (T07); retención (T08) |
-| Responder | Avanzado (3) | Plan (04), lecciones aprendidas | 1 / 3 / 2 / 0 | **1** | Verificar CU-02 con evidencia (T03); CU-03 (T04) |
-| Recuperar | Avanzado (3) | Reconstrucción desde el repo (06 §0) | 0 / 2 / 3 / 0 | **1** | Respaldos de datos y prueba de restauración (06 §3) |
+| Proteger | Avanzado (3) | Segmentación en 4 VLANs con reglas; agentes HIDS en `ssh-client` y `webapp` | 2 / 4 / 5 / 1 | **1** | MFA obligatorio en consolas (T01, TOTP ya validado en Keycloak); credenciales (T02); respaldos (06) |
+| Detectar | Avanzado (3) | CU-01, CU-02 y CU-03 verificados de punta a punta | 4 / 3 / 1 / 0 | **2** | Fuentes de log restantes al SIEM; ruleset público (T07); retención (T08) |
+| Responder | Avanzado (3) | Plan (04), CU-02 y CU-03 cerrados con evidencia, lecciones aprendidas | 3 / 3 / 0 / 0 | **2** | Captura del mail de notificación en CU-02/CU-03; medir MTTD/MTTR |
+| Recuperar | Avanzado (3) | Reconstrucción desde el repo (06 §0); RTO/RPO definidos (06 §1) | 0 / 4 / 1 / 0 | **1** | Respaldos de datos y prueba de restauración (06 §3) |
 
-**Lectura:** la brecha está concentrada en evidencia y en controles de identidad y
-recuperación. Detectar es la función más avanzada porque es la única con una cadena
-verificada de punta a punta (CU-01).
+**Lectura (actualizada 11/10):** Detectar y Responder subieron de madurez: los tres
+casos de uso (CU-01, CU-02, CU-03) están verificados de punta a punta con evidencia real
+en `docs/evidencias/`. La brecha ahora se concentra en Gobernar (aprobación formal),
+Proteger (MFA obligatorio más allá de un usuario de demo, respaldos) y Recuperar (sin
+prueba de restauración ejecutada).
 
 ## 5. Plan de tratamiento (resumen)
 
@@ -188,14 +190,14 @@ el orden de ejecución.
 
 | ID | Riesgo/Control | Acción | Prioridad | Responsable | Fecha límite |
 |---|---|---|---|---|---|
-| T03 | R03 / A.5.26 | Verificar CU-02 con evidencia (`docs/evidencias/README.md`) | 1 | Analista SOC | 08/10/2026 |
-| T01 | R01 / A.8.5, A.5.16 | MFA en Keycloak y en el dashboard de Wazuh | 1 | Admin IAM | 14/10/2026 |
+| T03 | R03 / A.5.26 | ~~Verificar CU-02 con evidencia~~ — **hecho 11/10**, ver `docs/evidencias/CU-02/` | — | Analista SOC | ✅ 11/10/2026 |
+| T01 | R01 / A.8.5, A.5.16 | MFA obligatorio en Keycloak (TOTP ya validado con un usuario de demo) y en el dashboard de Wazuh | 1 | Admin IAM | 14/10/2026 |
 | T02 | R02 / A.5.17 | Cambiar credenciales de laboratorio | 1 | Admin de infraestructura | 14/10/2026 |
 | T11 | R11 / A.8.32 | Revisión de un segundo integrante antes de integrar a `main` | 1 | RSI | Vigente |
 | — | A.5.1, A.5.4 | Aprobación de política y SoA; asignar RSI | 1 | Equipo | 14/10/2026 |
 | T08 | R08 / A.5.33, A.8.13 | Retención 90 días + respaldo y prueba de restauración | 2 | Admin de infraestructura | 14/10/2026 |
 | T07 | R07 / A.5.7 | Ruleset público en Suricata | 2 | Analista SOC | 14/10/2026 |
-| T04 | R04 | CU-03: FIM en la app + playbook de aislamiento | 2 | Analista SOC | 14/10/2026 |
+| T04 | R04 | ~~CU-03: FIM en la app + playbook de aislamiento~~ — **hecho 11/10**, ver `docs/evidencias/CU-03_INC-2026-003/` | — | Analista SOC | ✅ 11/10/2026 |
 | T05 | R05 / A.8.12, A.8.23 | Restringir salida a Internet de Servidores; CU-05 | 2 | Admin de red | 14/10/2026 |
 | T06 | R06 | Mirror de tráfico o Suricata en OPNsense | 2 | Admin de red | 14/10/2026 |
 | — | A.8.8 | Gestión de vulnerabilidades (doc 10, RF-14) | 2 | Admin de infraestructura | 14/10/2026 |

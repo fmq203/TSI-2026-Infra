@@ -93,8 +93,8 @@ confirmados ni RSI asignado para firmar. Los tres están en el plan de tratamien
 | ID incidente | ¿Datos personales? | Severidad | Decisión | Fundamento | Fecha |
 |---|---|---|---|---|---|
 | INC-2026-001 (CU-01) | No | S3 | No notificar | Reconocimiento sin acceso a datos; simulación propia | 07/10/2026 |
-| INC-2026-002 (CU-02) | No | S2 | No notificar | Intento contenido sobre un puesto de prueba; simulación propia (pendiente de ejecutar) | 07/10/2026 |
-| INC-2026-003 (CU-03) | — | — | — | No implementado | — |
+| INC-2026-002 (CU-02) | No | S2 | No notificar | Intento contenido sobre un puesto de prueba; simulación propia, **ejecutada y cerrada el 11/10** (`docs/evidencias/CU-02/`) | 11/10/2026 |
+| INC-2026-003 (CU-03) | No | S1 | No notificar | Webshell contenida mediante aislamiento automático antes de confirmarse exfiltración; simulación propia, **ejecutada y cerrada el 11/10** (`docs/evidencias/CU-03_INC-2026-003/`) | 11/10/2026 |
 | INC-2026-004 (ejercicio) | Sí (supuesto) | S0 | Notificar a BCU y URCDP | §2: datos personales + S0 | 07/10/2026 |
 
 | ID incidente | Autoridad | Fecha de envío | Canal | Estado | Responsable |
@@ -108,7 +108,9 @@ confirmados ni RSI asignado para firmar. Los tres están en el plan de tratamien
 - [x] Plantilla de notificación BCU completa (ejercicio).
 - [x] Plantilla de notificación URCDP completa (ejercicio).
 - [x] Criterios de decisión definidos.
-- [ ] Al menos un incidente simulado documentado de punta a punta — el circuito de
-  notificación se recorrió en el ejercicio de escritorio; un incidente técnico de punta a
-  punta (INC-2026-002) está pendiente de ejecutar.
+- [x] Al menos un incidente simulado documentado de punta a punta — el circuito de
+  notificación se recorrió en el ejercicio de escritorio (INC-2026-004); además
+  INC-2026-002 y INC-2026-003 quedaron cerrados de punta a punta (detección → respuesta
+  automática) con evidencia técnica real, aunque sin la notificación por mail capturada
+  (ver `04-gestion-incidentes.md` §3.2).
 - [ ] Plazos legales confirmados — pendiente.

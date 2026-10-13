@@ -5,7 +5,7 @@ Keycloak, mail, honeypot y blancos vulnerables en Docker) y su documentación fo
 Este README es la **puerta de entrada**: qué hay, cómo levantarlo desde cero, en qué
 estado está y qué falta.
 
-## Estado del proyecto — 07/10/2026
+## Estado del proyecto — 11/10/2026
 
 **Escenario:** FinSegura S.A., fintech de préstamos online
 ([consigna propia](docs/40-consigna-propia.md)). **Arquitectura:** router/firewall +
@@ -19,20 +19,20 @@ estado está y qué falta.
 |---|---|---|
 | Router / firewall + segmentación | OPNsense (referencia) · nftables (`vagrant/`) | ✅ Funcionando |
 | NIDS | Suricata, 5 firmas propias | ✅ Funcionando |
-| SIEM + HIDS | Wazuh 4.9.0 (manager, indexer, dashboard) + agente en el puesto de usuario | ✅ Funcionando (agente `ssh-client` conectado 07/10, con FIM y SCA) |
-| SOAR | Wazuh Active Response (`firewall-drop`) | 🔶 Construido, sin verificar |
+| SIEM + HIDS | Wazuh 4.9.0 (manager, indexer, dashboard) + agentes en `ssh-client` y `webapp` | ✅ Funcionando y verificado (CU-02, CU-03) |
+| SOAR | Wazuh Active Response (`firewall-drop`, `isolate-webapp`) | ✅ Verificado (CU-02, CU-03 — 11/10) |
 | Honeypot | Cowrie → Wazuh | 🔶 Construido, sin verificar |
-| Alertas por correo | docker-mailserver → `soc@lab.local` | 🔶 Configurado, sin evidencia |
-| Identidad / MFA | Keycloak 26 | 🔶 Corre; MFA sin configurar |
+| Alertas por correo | docker-mailserver → `soc@lab.local` | 🔶 Configurado; sin captura de un mail recibido en ninguno de los casos ejecutados |
+| Identidad / MFA | Keycloak 26 | 🔶 Realm `lab` con TOTP configurado y validado (11/10); WebAuthn pendiente de HTTPS |
 | Activos a proteger | App de préstamos (DVWA) + MySQL + puesto de usuario | ✅ Funcionando |
 
 ### Casos de uso (detección → respuesta → notificación)
 
 | Caso | Estado |
 |---|---|
-| CU-01 Reconocimiento / escaneo | ✅ Detectado de punta a punta (05/10): Suricata → Wazuh → dashboard. [INC-2026-001](docs/04-gestion-incidentes.md) |
-| CU-02 Fuerza bruta SSH → bloqueo automático → mail | 🔶 Desplegado en el entorno de referencia el 07/10 (agente conectado, reglas del router creadas); **falta correr el ataque** |
-| CU-03 Webshell (FIM + aislamiento) | ❌ Pendiente |
+| CU-01 Reconocimiento / escaneo | ✅ Verificado de punta a punta (05/10): Suricata → Wazuh → dashboard. [INC-2026-001](docs/04-gestion-incidentes.md) |
+| CU-02 Fuerza bruta SSH → bloqueo automático | ✅ Verificado de punta a punta (11/10): regla `5712` → `firewall-drop`. [INC-2026-002](docs/04-gestion-incidentes.md) — falta captura del mail |
+| CU-03 Webshell (FIM + aislamiento) | ✅ Verificado de punta a punta (11/10): regla local `100200` → `isolate-webapp`. [INC-2026-003](docs/04-gestion-incidentes.md) — falta captura del mail |
 | CU-04 Credenciales robadas · CU-05 Exfiltración por DNS | ❌ Pendientes |
 
 ### Documentación (borradores, pendientes de revisión y aprobación)
@@ -52,13 +52,14 @@ estado está y qué falta.
 
 ### Lo que falta (hacia la auditoría del 14/10)
 
-1. **Evidencia** en [`docs/evidencias/`](docs/evidencias/README.md): el procedimiento de
-   captura está escrito; faltan las capturas de CU-01 y CU-02.
-2. **Verificar CU-02** de punta a punta (es la demostración obligatoria de detección →
-   respuesta → notificación).
-3. **MFA** en Keycloak y en el dashboard de Wazuh.
-4. CU-03, retención de logs de 90 días, respaldos con prueba de restauración.
-5. Documentos `10` (vulnerabilidades) y `28` (informe Blue Team).
+1. **Captura del mail** de alerta en `soc@lab.local` para CU-02 y CU-03 (detección y
+   respuesta ya están verificadas; falta ese último eslabón de la cadena).
+2. **WebAuthn** en Keycloak (TOTP ya validado; WebAuthn requiere HTTPS) y MFA en el
+   dashboard de Wazuh.
+3. Verificar Cowrie en el dashboard, retención de logs de 90 días, respaldos con prueba
+   de restauración.
+4. Documentos `10` (vulnerabilidades) y `28` (informe Blue Team).
+5. Medir MTTD/MTTR con precisión (hora exacta del ataque vs. de la alerta) en CU-01/02/03.
 
 ### Aclaraciones
 
@@ -102,6 +103,11 @@ Claude Code solo; con otra IA, pasarle primero `CLAUDE.md`, este README y
 `brain/MEMORY.md`.
 
 ## Pendientes
+
+> **Nota (11/10/2026):** esta sección quedó escrita el 07/10; los puntos 2 y 4 (CU-02 y
+> CU-03) ya están resueltos y verificados — ver "Casos de uso" y "Lo que falta" arriba,
+> y "Actualización de avances — 11/10/2026" abajo. Se deja sin reescribir para no perder
+> el historial.
 
 ### Infra (para la demo de la auditoría)
 

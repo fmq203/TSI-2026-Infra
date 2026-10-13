@@ -24,13 +24,17 @@ administradores.
 | Campo | Valor |
 |---|---|
 | Código | SI-IAM-09 |
-| Versión | 0.1 (borrador) |
+| Versión | 0.2 (borrador) |
 | Responsable | Admin IAM (**rol sin asignar**, ver `excel/03` hoja Roles) |
-| Fecha | 07/10/2026 |
+| Fecha | 11/10/2026 |
 
-**Estado al 07/10/2026:** Keycloak 26.0 corre (`10.10.90.20:8080`) con su base
-PostgreSQL, pero **no hay realm, usuarios ni MFA configurados**. Este documento define
-la política a implementar antes de la auditoría (14/10).
+**Estado al 11/10/2026:** Keycloak 26.0 corre (`10.10.90.20:8080`) con su base
+PostgreSQL. R. Rampoldi creó el realm `lab` con un usuario de demo (`admin-lab`) y
+**validó TOTP de punta a punta** (login con usuario + contraseña + código TOTP). También
+generó certificados de laboratorio (`infra/identity/certs/`) para una futura
+configuración HTTPS. **Pendiente:** WebAuthn (requiere HTTPS, bloqueado hasta activar los
+certificados en el servicio), hash Argon2 a verificar en la política del realm, y MFA en
+el dashboard de Wazuh (§1.1, sigue sin resolver).
 
 ---
 
@@ -129,9 +133,11 @@ emergencia.
 
 ## Check de aceptación
 
-- [ ] MFA obligatorio en al menos 2 operaciones críticas — definido (§1), **no
-  implementado**.
-- [ ] TOTP operativo con RFC 6238 — pendiente.
+- [ ] MFA obligatorio en al menos 2 operaciones críticas — TOTP validado en el realm
+  `lab` (consola de Keycloak); falta extenderlo a las demás consolas críticas (§1) y
+  hacerlo obligatorio por política, no solo probado con un usuario de demo.
+- [x] TOTP operativo con RFC 6238 — validado el 11/10 (login con usuario + contraseña +
+  código TOTP, ver README raíz "Actualización de avances — 11/10/2026").
 - [ ] Argon2/bcrypt para el hash de credenciales — definido, **a verificar** en Keycloak.
 - [ ] Revisión de accesos con acta — pendiente.
 - [ ] Registro de autenticaciones en el SIEM — pendiente.
