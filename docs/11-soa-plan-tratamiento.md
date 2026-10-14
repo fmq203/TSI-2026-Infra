@@ -139,7 +139,7 @@ evidencia en el repo; **Parcial** = existe pero incompleto o sin verificar;
 | A.8.12 | Prevención de fuga de datos | Sí | — | 03 R05 (egress), CU-05 | Pendiente |
 | A.8.13 | Copias de seguridad | Sí | — | docs/06 §2 | Pendiente |
 | A.8.14 | Redundancia de instalaciones | Sí | Un solo nodo en el laboratorio: la redundancia se reemplaza por reconstrucción desde el repo (docs/06 §0). Riesgo a aceptar por el RSI. | docs/06 | Pendiente — riesgo a aceptar |
-| A.8.15 | Registro (logging) | Sí | — | docs/07 §2 | Parcial — 1 de 8 fuentes verificada |
+| A.8.15 | Registro (logging) | Sí | — | docs/07 §2 | Parcial — 3 de 8 fuentes verificadas (NIDS, puesto de usuario, FIM de la app) |
 | A.8.16 | Actividades de monitoreo | Sí | — | Wazuh + Suricata; CU-01 (INC-2026-001) | Parcial |
 | A.8.17 | Sincronización de relojes | Sí | — | Contenedores usan el reloj del host; registros en UTC (RNF-05) | Parcial — NTP del host sin verificar |
 | A.8.18 | Uso de utilitarios privilegiados | Sí | — | NET_ADMIN solo en ssh-client y mailserver; docker-host LXC privilegiado | Parcial — justificar |

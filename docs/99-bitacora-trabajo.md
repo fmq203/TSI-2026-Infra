@@ -266,6 +266,77 @@ Fecha: 07/10/2026 · Equipo: Blue · Responsable: fmq203 · Carga: el mismo día
   `brain/LEARNINGS.md` (2026-10-07).
 - **Observaciones**: La ejecución del ataque de CU-02 queda como siguiente paso.
 
+---
+Fecha: 11/10/2026 · Equipo: Blue · Responsable: Renzo Rampoldi · Carga: diferida
+---
+
+### Actividad: Evidencia real de CU-01/CU-02/CU-03 y CU-03 implementado; avance MFA Keycloak
+
+- **Fase**: Implementación / Prueba
+- **Duración**: no registrada (commit `40364c8`)
+- **Tarea realizada**: Ejecución y captura de evidencia de los tres casos de uso. CU-03
+  implementado de cero: imagen propia `targets/web-victim/` (DVWA + agente Wazuh embebido
+  + FIM en tiempo real sobre `/var/www/html`), regla local `100200` (nivel 12, MITRE
+  T1505.003) y Active Response `isolate-webapp`. Keycloak: realm `lab`, usuario de demo y
+  TOTP validado; certificados de laboratorio generados (`identity/certs/`) para HTTPS
+  futuro.
+- **Herramienta / comando**: `nmap`, fuerza bruta SSH con usuario inexistente, alta de
+  archivo `.php` en el webroot; capturas del dashboard y de la consola
+- **Resultado**: CU-01, CU-02 y CU-03 verificados en **detección y respuesta**, con
+  evidencia en `docs/evidencias/`. TOTP de Keycloak validado.
+- **Evidencia anexa**: commit `40364c8`; `docs/evidencias/CU-01_INC-2026-001/`, `CU-02/`,
+  `CU-03_INC-2026-003/` (capturas).
+- **Incidencia / hallazgo**: La detección de CU-02 requirió atacar con un usuario
+  **inexistente** (regla 5712), no con un usuario válido. La notificación por mail no se
+  capturó en ninguno de los casos.
+- **Observaciones**: Push directo a `main`.
+
+---
+Fecha: 14/10/2026 · Equipo: Blue · Responsable: fmq203 · Carga: el mismo día
+---
+
+### Actividad: Cierre de la notificación por mail (CU-02 y CU-03) de punta a punta
+
+- **Fase**: Prueba / Documentación
+- **Duración**: no registrada (commits `e5f5541`, `0925f6b`, `fcd653b`)
+- **Tarea realizada**: `git pull` del commit de Renzo y actualización de toda la
+  documentación a la evidencia real. Diagnóstico y cierre del eslabón de notificación,
+  que nunca había funcionado: (1) faltaba la regla de firewall Gestión→DMZ TCP 25 en
+  OPNsense; (2) Postfix rechazaba el mail del manager (`550 5.5.1 Protocol error`,
+  filtro `postscreen`) porque `net_mgmt` no estaba en `mynetworks` — fix persistente en
+  `infra/mail/config/postfix-main.cf`. Reenrolamiento del agente `webapp` (el contenedor
+  vivo nunca se había recreado con la imagen `web-victim`) y sincronización de la regla
+  `100200` al manager con `configure-manager.sh`.
+- **Herramienta / comando**: `pct exec 108` (API Proxmox), `docker compose up -d
+  --force-recreate`, `configure-manager.sh`, `postconf`, revisión del Maildir de
+  `mailserver`
+- **Resultado**: **Éxito** — CU-02 (regla 5712 → `firewall-drop` → mail, MTTD ≈13 s,
+  MTTR ≈0 s, +24 s notificación) y CU-03 (regla 100200 → `isolate-webapp` → mail, MTTD/MTTR
+  ≈0 s, +15 s notificación) verificados de punta a punta, notificación incluida.
+- **Evidencia anexa**: `docs/evidencias/CU-02/2026-10-14_CU-02_mail.txt` y
+  `_deteccion-respuesta.txt`; `docs/evidencias/CU-03_INC-2026-003/2026-10-14_CU-03_mail.txt`
+  y `_reenrolamiento-y-cierre.txt`; `brain/LEARNINGS.md` 2026-10-14.
+- **Incidencia / hallazgo**: (1) Dos causas de red/config tenían el mail caído hacía 14
+  días sin que se notara (detección y respuesta sí funcionaban). (2) El agente de `webapp`
+  se había perdido porque el contenedor nunca se recreó con la imagen nueva y el manager
+  no tenía sincronizada la regla 100200 tras el pull.
+- **Observaciones**: `infra/targets/wazuh-agent/` quedó como código muerto (el sidecar
+  revertido el 06/10); CU-03 usa `web-victim/` con agente embebido.
+
+### Actividad: Diagramas Mermaid de arquitectura y revisión de documentación
+
+- **Fase**: Documentación
+- **Duración**: no registrada (commits `29f89ae`, `5c07adf`, `04f48cf`, `a2f41a5`)
+- **Tarea realizada**: Diagramas Mermaid en `docs/00-arquitectura.md` (topología de red +
+  las 3 cadenas detección→respuesta→notificación) y en `infra/README.md` (stacks + orden
+  de arranque de `make up`). Actualización de `04`, `07`, `09`, `11`, `12`, Excel 01,
+  `docs/README.md`, README raíz y `brain/` al estado real.
+- **Resultado**: Documentación alineada con el estado verificado al 14/10.
+- **Evidencia anexa**: commits citados.
+- **Incidencia / hallazgo**: La sintaxis `-.texto.->` de Mermaid no admite puntos en la
+  etiqueta (rompía el render de GitHub con `eve.json`); corregido.
+- **Observaciones**: —
+
 ## 3. Tabla resumen (formato Excel `04-bitacora-planilla.xlsx`)
 
 | Fecha | Hora (UTC) | Fase | Responsable | Tarea | Herramienta/Comando | Resultado/Evidencia | Incidencia | Observaciones |
@@ -282,6 +353,10 @@ Fecha: 07/10/2026 · Equipo: Blue · Responsable: fmq203 · Carga: el mismo día
 | 07/10/2026 | 02:08- | Doc. | fmq203 | Incidentes, bitácora, Excel 02/03/04 | — | Borradores — `0ba84e1`, `b3ba156`, … | Plazos BCU/URCDP sin fuente | Mismo día |
 | 07/10/2026 | — | Doc. | fmq203 | Excel 01 + ISACA 01, 03, 07, 09 | — | Borradores | 5 brechas nuevas (ver entrada) | Mismo día |
 | 07/10/2026 | — | Doc. | fmq203 | Kit de evidencias; 06, 11, 12; push | git push | Borradores | Sin respaldos de datos; SoA 93 vs 79 | Mismo día |
+| 07/10/2026 | 18:31 | Impl./Prueba | fmq203 | Despliegue CU-02 + Cowrie en referencia | pct exec, nc, OPNsense | Agente `ssh-client` Active | CU-02 nunca desplegado; reglas FW faltantes | Mismo día |
+| 11/10/2026 | — | Impl./Prueba | R. Rampoldi | Evidencia CU-01/02/03; CU-03 implementado; TOTP Keycloak | nmap, fuerza bruta, FIM | CU-01/02/03 detección+respuesta OK — `40364c8` | Sin captura de mail; CU-02 con usuario inexistente | Carga diferida |
+| 14/10/2026 | — | Prueba/Doc. | fmq203 | Cierre notificación por mail CU-02/CU-03 | pct exec, compose, configure-manager, postconf | Éxito punta a punta — `e5f5541`, `0925f6b`, `fcd653b` | Mail caído 14d (FW + postscreen); agente webapp perdido | Mismo día |
+| 14/10/2026 | — | Doc. | fmq203 | Diagramas Mermaid + revisión de docs | — | Docs alineadas — `29f89ae`..`a2f41a5` | Mermaid no admite puntos en etiquetas | Mismo día |
 
 ---
 
@@ -291,13 +366,15 @@ Cada integrante confirma que las entradas con su nombre reflejan lo que hizo.
 
 | Integrante | Entradas | Firma | Fecha |
 |---|---|---|---|
-| fmq203 | 01/10, 02/10, 05/10 (CU-01, CU-02), 07/10 | ☐ pendiente | |
-| Renzo Rampoldi | 05/10 (Cowrie), 06/10 | ☐ pendiente | |
+| fmq203 | 01/10, 02/10, 05/10 (CU-01, CU-02), 07/10, 14/10 | ☐ pendiente | |
+| Renzo Rampoldi | 05/10 (Cowrie), 06/10, 11/10 | ☐ pendiente | |
 
 ## Check de aceptación
 
 - [ ] Registro diario sin lagunas superiores a 1 día — **no se cumple** antes del 07/10
-  (ver §1); se cumple desde el 07/10.
+  (ver §1); se cumple desde el 07/10 (con días sin actividad entre el 08 y el 10, y entre
+  el 12 y el 13, declarados como sin trabajo registrado).
 - [ ] Cada miembro firma sus entradas — pendiente (§4).
 - [ ] Cada hallazgo del Red Team tiene su bitácora de ataque — a partir del 28/10.
-- [ ] Cada control auditado puede relacionarse con una o más entradas de bitácora.
+- [x] Cada control auditado puede relacionarse con una o más entradas de bitácora — los
+  controles de Detectar/Responder verificados (CU-01/02/03) tienen entrada con evidencia.

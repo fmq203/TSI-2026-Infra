@@ -74,10 +74,14 @@ services:
       net_usr:
         ipv4_address: ${SSH_CLIENT_IP:-10.10.30.10}
 
-  # webapp (DVWA) todavía sin agente: se suma para CU-03 (FIM sobre /var/www/html).
-  # wazuh-agent/ (Dockerfile agregado 2026-10-06) queda como base reutilizable para eso,
-  # pero necesita compartir el volumen de /var/www/html de `webapp` para hacer FIM real
-  # sobre sus archivos — tal como está hoy (contenedor aislado) no monitorea nada útil.
+  # CU-03 (FIM sobre /var/www/html) ya resuelto: `webapp` usa la imagen propia
+  # `web-victim/`, con el agente Wazuh embebido en el mismo contenedor (ve los archivos
+  # del webroot directamente, sin volumen compartido). Verificado de punta a punta el
+  # 14/10 (ver docs/evidencias/CU-03_INC-2026-003/).
+  #
+  # El directorio `wazuh-agent/` (sidecar agregado el 06/10 y revertido el 07/10) quedó
+  # SIN USO: ese enfoque de agente en contenedor aparte no veía el filesystem del blanco.
+  # Se conserva solo como referencia histórica; no lo referencia ningún compose.
 
 networks:
   net_srv:

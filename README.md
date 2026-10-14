@@ -48,7 +48,7 @@ estado está y qué falta.
 | [11 SoA](docs/11-soa-plan-tratamiento.md) | Anexo A ISO 27001:2022 completo (93 controles) y brecha MCU 5.0 por función |
 | [12 Notificación](docs/12-notificacion-incidentes.md) | Criterios BCU/URCDP y ejercicio de escritorio |
 | [99 Bitácora](docs/99-bitacora-trabajo.md) | Desde el 01/10 (ver aclaración abajo) |
-| [Excel MCU 5.0](docs/excel/) | 01 controles (47: 5 implementados, 26 parciales, 15 pendientes, 1 N.A.), 02 activos (A01-A22), 03 RACI, 04 bitácora |
+| [Excel MCU 5.0](docs/excel/) | 01 controles (47: 11 implementados, 26 parciales, 9 pendientes, 1 N.A.), 02 activos (A01-A22), 03 RACI, 04 bitácora |
 
 ### Lo que falta (hacia la auditoría del 14/10)
 

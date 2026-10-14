@@ -1,7 +1,7 @@
 ---
 title: Hechos estables — Tarea 3 (foto del estado actual)
 tags: [tarea3, memoria, arquitectura, fechas, estado]
-updated: 2026-10-06
+updated: 2026-10-14
 ---
 
 # Hechos estables — Tarea 3

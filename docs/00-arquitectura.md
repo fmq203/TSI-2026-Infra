@@ -17,7 +17,7 @@
 | Versión | 0.5 (borrador — falta aprobación docente) |
 | Equipo | Blue Team — fmq203, Renzo Rampoldi |
 | Fecha | 14/10/2026 |
-| Aprobación | `[Docente]` — pendiente |
+| Aprobación | Docente — **pendiente** |
 
 ---
 
@@ -230,7 +230,7 @@ Detalle completo, con los JSON de alerta y los comandos de verificación, en
 | Cowrie | Cowrie | Honeypot SSH/Telnet | Docker, VLAN DMZ | SSH/Telnet (falsos) |
 | docker-mailserver | Postfix+Dovecot | Correo corporativo, canal de alerta 1 | Docker, VLAN DMZ | SMTP/IMAP |
 | Wazo PBX | Wazo/Asterisk | Telefonía, canal de verificación humana | Docker, VLAN DMZ | SIP/RTP |
-| Alerting relay | `[webhook script]` | Canal de alerta 2 (Telegram/Discord) | Docker, VLAN Gestión | HTTPS webhook |
+| Alerting relay | Relay de webhook (no construido) | Canal de alerta 2 (Telegram/Discord) | Docker, VLAN Gestión | HTTPS webhook |
 
 ## 4. Escenarios (el "+1" de 4+1)
 

@@ -9,9 +9,9 @@
 |---|---|
 | Código | CP-T3-01 |
 | Versión | 0.1 (borrador) |
-| Equipo | Blue Team — `[nombres]` |
-| Fecha | `[DD/MM/2026]` |
-| Aprobación | `[Docente]` — pendiente |
+| Equipo | Blue Team — fmq203, Renzo Rampoldi |
+| Fecha | 14/10/2026 |
+| Aprobación | Docente — **pendiente** |
 
 ---
 
