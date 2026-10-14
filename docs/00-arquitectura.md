@@ -103,8 +103,8 @@ flowchart TB
 
     WEBAPP -.agente 1514/1515.-> MANAGER
     SSHC -.agente 1514/1515.-> MANAGER
-    NIDS -.volumen eve.json.-> MANAGER
-    HONEY -.volumen cowrie.json.-> MANAGER
+    NIDS -.volumen eve-json.-> MANAGER
+    HONEY -.volumen cowrie-json.-> MANAGER
     MANAGER -.SMTP 25.-> MAIL
     MANAGER -.firewall-drop / isolate-webapp.-> SSHC
     MANAGER -.firewall-drop / isolate-webapp.-> WEBAPP
