@@ -20,33 +20,31 @@ fuera de Docker porque su naturaleza lo exige (ver abajo).
 privilegiado porque `docker-mailserver` necesita escribir un sysctl, `kernel.domainname`,
 que un LXC no privilegiado deniega — ver `../brain/LEARNINGS.md`).
 
-```
-                         ┌─────────────────────────────┐
-                         │   router (VM)                 │
-                         │   OPNsense, o nftables en     │
-                         │   VirtualBox                  │
-                         │   - NAT / reglas entre VLANs   │
-                         └──────────┬──┬──┬──┬────────────┘
-                    Servidores (10) │  │  │  │ Gestión (90)
-                                    │  │  │  └──────────────────┐
-                            DMZ (20)│  │Usuarios (30)           │
-                         ┌──────────▼──▼──▼──────────────────┐  │
-                         │   docker-host (VM o LXC privil.)    │ │
-                         │   Linux + Docker Engine, 1 NIC        │
-                         │   por VLAN, .5 en todas               │
-                         │                                         │
-                         │  ┌───────────────────────────────────┐ │
-                         │  │ identity/ (Keycloak)          ✅    │ │
-                         │  │ siem-hids/ (Wazuh ×3)         ✅    │ │
-                         │  │ nids/ (Suricata, en VLAN DMZ) ✅    │ │
-                         │  │ mail/ (docker-mailserver)     ✅    │ │
-                         │  │ honeypot/ (Cowrie)            ✅    │ │
-                         │  │ targets/ (app+db+ssh víctima) ✅    │ │
-                         │  │ wazo/ (Wazo PBX)              ❌    │ │
-                         │  │ alerting/ (webhook 2º canal)  ❌    │ │
-                         │  │ soar-thehive-optional/ (apagado)   │ │
-                         │  └───────────────────────────────────┘ │
-                         └─────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    ROUTER["router (VM)<br/>OPNsense, o nftables en VirtualBox<br/>NAT / reglas entre VLANs"]
+
+    subgraph HOST["docker-host (VM o LXC privilegiado)<br/>Linux + Docker Engine, 1 NIC por VLAN, .5 en todas"]
+        IDENTITY["identity/ (Keycloak) ✅"]
+        SIEM["siem-hids/ (Wazuh ×3) ✅"]
+        NIDS["nids/ (Suricata, VLAN DMZ) ✅"]
+        MAIL["mail/ (docker-mailserver) ✅"]
+        HONEY["honeypot/ (Cowrie) ✅"]
+        TARGETS["targets/ (app+db+ssh víctima) ✅"]
+        WAZO["wazo/ (Wazo PBX) ❌ no construido"]
+        ALERT["alerting/ (webhook 2º canal) ❌ no construido"]
+        THEHIVE["soar-thehive-optional/ ❌ no hace falta"]
+    end
+
+    ROUTER -- "Servidores (VLAN 10)" --> HOST
+    ROUTER -- "DMZ (VLAN 20)" --> HOST
+    ROUTER -- "Usuarios (VLAN 30)" --> HOST
+    ROUTER -- "Gestión (VLAN 90)" --> HOST
+
+    classDef ok fill:#e6f4ea,stroke:#34a853
+    classDef missing fill:#fce8e6,stroke:#ea4335,stroke-dasharray: 4 2
+    class IDENTITY,SIEM,NIDS,MAIL,HONEY,TARGETS ok
+    class WAZO,ALERT,THEHIVE missing
 ```
 
 ### Por qué el router es una VM aparte
@@ -146,7 +144,7 @@ De acá en adelante, seguir "Cómo levantar" más abajo.
 | `mail/` | docker-mailserver (Postfix+Dovecot) | RF-07 (canal email) | ~0.5 GB |
 | `identity/` | Keycloak (TOTP + WebAuthn nativos) | RF-12 | ~1 GB |
 | `wazo/` | Wazo PBX | RF-08 | ~1.5-2 GB — ❌ **no construido** (carpeta no existe) |
-| `targets/` | App vulnerable + DB + host SSH víctima (agente Wazuh **pendiente**) | activos a proteger; RT-02/RT-03 | ~1 GB |
+| `targets/` | App vulnerable + DB + host SSH víctima, **agente Wazuh verificado en los dos** (FIM/HIDS) | activos a proteger; RT-02/RT-03 | ~1 GB |
 | `alerting/` | Relay de webhook (2º canal: Telegram/Discord) | RF-07 (2º canal) | ~0.1 GB — ❌ **no construido** |
 | `soar-thehive-optional/` | TheHive + Cortex + Cassandra + ES | opcional, RF-11 enriquecido | ~3-4 GB — ❌ **no construido**, y no hace falta |
 
@@ -177,6 +175,30 @@ como `external`. `docker-compose.networks.yml` queda solo como referencia legibl
 >
 > Limitación de macvlan: `docker-host` **no puede hablar con sus propios contenedores**
 > (ni `curl` ni ping). Para probar un servicio, hacerlo desde el router u otra VM.
+
+## Orden de arranque (por qué `make up` sigue esta secuencia)
+
+```mermaid
+flowchart LR
+    NET["create-networks.sh<br/>(las 4 redes macvlan)"] --> IDENTITY
+    IDENTITY["identity/<br/>Keycloak"] --> NIDS
+    NIDS["nids/<br/>Suricata"] --> HONEY
+    HONEY["honeypot/<br/>Cowrie"] --> SIEM
+    SIEM["siem-hids/<br/>Wazuh manager+indexer+dashboard<br/>+ configure-manager.sh"] --> MAIL
+    MAIL["mail/<br/>docker-mailserver<br/>+ ensure-accounts.sh"] --> TARGETS
+    TARGETS["targets/<br/>app+db+ssh-client (--build)"]
+
+    NIDS -. "monta nids_suricata_logs<br/>como external" .-> SIEM
+    HONEY -. "monta honeypot_cowrie_logs<br/>como external" .-> SIEM
+```
+
+`nids` y `honeypot` van **antes** que `siem-hids` porque éste monta sus volúmenes de
+logs como `external: true` — si no existen todavía, `docker compose up` de `siem-hids`
+falla con "external volume ... not found" (ver `brain/LEARNINGS.md` 2026-10-06).
+`identity` va primero porque todo lo demás puede usarlo para MFA. `targets` va último
+porque sus agentes necesitan que `siem-hids` ya esté escuchando en 1514/1515, y su
+notificación por mail necesita que `mail` ya esté arriba y alcanzable por el router
+(puerto 25 desde Gestión — ver `brain/LEARNINGS.md` 2026-10-14).
 
 ## Cómo levantar
 
@@ -235,21 +257,23 @@ cd "$INFRA/targets"    && docker compose up -d --build   # ssh-client es imagen 
 2. ~~Stacks identity, siem-hids, nids, mail, honeypot, targets~~ — construidos y
    probados. Reglas de Suricata escritas para CU-01 (`nids/rules/local.rules`). Faltan
    los decoders/reglas de Wazuh para CU-02..CU-05.
-3. **Agente Wazuh en `targets`** (HIDS/FIM real, RF-04) — instalado en `ssh-client`
-   (imagen `targets/ssh-victim/`, CU-02: fuerza bruta → Active Response `firewall-drop`
-   → mail a `soc@lab.local`), **sin verificar todavía**. Falta en `webapp` (CU-03). El
-   router tiene que dejar pasar Servidores/Usuarios → Gestión 1514/1515 y Gestión → DMZ
-   25 (mail): el router nftables de `vagrant/` ya lo permite; en OPNsense hay que crear
-   las reglas.
+3. ~~**Agente Wazuh en `targets`** (HIDS/FIM real, RF-04)~~ — **verificado de punta a
+   punta el 14/10** en `ssh-client` (CU-02: fuerza bruta → `firewall-drop` → mail) y en
+   `webapp` (CU-03: FIM → `isolate-webapp` → mail), ambos con MTTD/MTTR reales medidos.
+   Las reglas de router (Servidores/Usuarios → Gestión 1514/1515 y Gestión → DMZ 25)
+   están creadas y confirmadas en OPNsense; el nftables de `vagrant/` ya las traía.
 4. ~~Logs de Suricata y Cowrie → Wazuh~~ — los dos volúmenes (`nids_suricata_logs`,
    `honeypot_cowrie_logs`) se montan en `wazuh.manager` y `configure-manager.sh` agrega
    sus `<localfile>`. Suricata verificado (CU-01, 2026-10-05). Cowrie sumado 2026-10-06
-   (regla 100110, nivel 8: se ve en el dashboard pero no manda mail) — **sin verificar**.
-   Ojo: Suricata hoy probablemente solo ve el tráfico dirigido a su IP (`10.10.20.50`) —
-   ver el punto 7.
-5. **MFA dentro de Keycloak** (TOTP/WebAuthn, RF-12): el contenedor corre pero no hay
-   realm/usuarios/MFA configurados todavía.
-6. **Playbooks de Active Response** (scripts) para los 3 casos de RF-06.
+   (regla 100110, nivel 8: se ve en el dashboard pero no manda mail) — **todavía sin
+   verificar que aparezca en el dashboard**. Ojo: Suricata hoy probablemente solo ve el
+   tráfico dirigido a su IP (`10.10.20.50`) — ver el punto 7.
+5. **MFA dentro de Keycloak** (TOTP/WebAuthn, RF-12): realm `lab` creado, usuario de
+   demo y **TOTP validado de punta a punta**. WebAuthn pendiente — necesita HTTPS (los
+   certs ya están generados en `identity/certs/`, falta activarlos en el servicio).
+6. ~~**Playbooks de Active Response** (scripts) para los 3 casos de RF-06~~ — hechos y
+   verificados para CU-02 (`firewall-drop`) y CU-03 (`isolate-webapp`); falta el 3ro
+   (CU-04 o CU-05, sin implementar todavía).
 7. ⚠️ **Pendiente de decidir:** cómo llega tráfico real espejado a Suricata — hoy corre
    en la VLAN DMZ y ve tráfico local de ese segmento vía macvlan, no un mirror explícito
    del router. Opciones: espejar tráfico a nivel del hipervisor (bridge/switch virtual),
