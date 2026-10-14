@@ -1,0 +1,46 @@
+Return-Path: <wazuh@lab.local>
+Delivered-To: soc@lab.local
+Received: from mail.lab.local
+        by mail.lab.local with LMTP
+        id 3kbeJCHWzmqKCAAAH6nRKQ
+        (envelope-from <wazuh@lab.local>)
+        for <soc@lab.local>; Wed, 14 Oct 2026 01:08:49 +0000
+Received: from localhost (localhost [127.0.0.1])
+        by mail.lab.local (Postfix) with ESMTP id 7AA7C4A2B2
+        for <soc@lab.local>; Wed, 14 Oct 2026 01:08:49 +0000 (UTC)
+Authentication-Results: mail.lab.local; dmarc=none (p=none dis=none) header.from=lab.local
+Received: from notify.ossec.net (unknown [10.10.90.10])
+        by mail.lab.local (Postfix) with SMTP id EBFEB4A0E7
+        for <soc@lab.local>; Wed, 14 Oct 2026 01:08:48 +0000 (UTC)
+To: <soc@lab.local>
+From: Wazuh <wazuh@lab.local>
+Date: Wed, 14 Oct 2026 01:08:48 +0000
+Subject: Wazuh notification - (webapp) any - Alert level 12
+Message-Id: <20261014010849.7AA7C4A2B2@mail.lab.local>
+
+
+Wazuh Notification.
+2026 Oct 14 01:08:34
+
+Received From: (webapp) any->syscheck
+Rule: 100200 fired (level 12) -> "CU-03 Webshell: archivo PHP agregado al webroot: /var/www/html/cu03-mail-test2.php"
+Portion of the log(s):
+
+File '/var/www/html/cu03-mail-test2.php' added
+Mode: realtime
+
+Attributes:
+ - Size: 34
+ - Permissions: rw-r--r--
+ - Date: Wed Oct 14 01:08:34 2026
+ - Inode: 955524
+ - User: root (0)
+ - Group: root (0)
+ - MD5: 162aa36f048cbaff3d7ea364801aec6d
+ - SHA1: c1ba46185b3dc8c32922dbe7a49204bcd7711d2d
+ - SHA256: b4be7350bfebd6225b4f6dd42a2bb76d3c36eb39709fa3c193a312c1b32ae2c3
+
+
+
+
+ --END OF NOTIFICATION

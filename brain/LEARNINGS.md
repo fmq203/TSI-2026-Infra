@@ -170,3 +170,36 @@ MTTR ~0 s, notificación +11 s después de la alerta. Evidencia en
 servicio "configurado" realmente manda tráfico — probar el salto de red real (`/dev/tcp`
 con `timeout`, nunca sin él: sin timeout un bloqueo por firewall cuelga la sesión en vez
 de fallar rápido) antes de dar por buena la cadena completa.
+
+## 2026-10-14 — CU-03 (agente `webapp`) tenía dos deudas invisibles: contenedor y manager sin actualizar
+
+Al revisar por qué CU-03 no disparaba (misma sesión que la entrada anterior), aparecieron
+dos causas que no tienen que ver entre sí pero que se enmascaraban una a la otra:
+
+1. **El contenedor vivo nunca se recreó con la imagen nueva.** R. Rampoldi construyó
+   `tsi/web-victim:4.9.0` (agente embebido + FIM) el 11/10 y la dejó referenciada en
+   `infra/targets/docker-compose.yml`, pero el `target-webapp` que seguía corriendo en
+   el despliegue de referencia era el contenedor viejo (DVWA sin agente, 11 días de
+   uptime). `docker ps` lo mostraba `Up`, que es lo que hace parecer "andando" algo que
+   en realidad está corriendo la imagen equivocada — `Up` no dice qué imagen corre.
+   **Chequeo que lo hubiera encontrado antes:** `docker inspect <contenedor> --format
+   '{{.Image}}'` comparado contra lo que define el compose, o simplemente `docker exec
+   <contenedor> ls /var/ossec/bin/` para confirmar que el agente existe de verdad.
+2. **El manager en vivo tenía un `local_rules.xml` viejo.** El pull trajo la regla
+   `100200` al repo, pero nadie volvió a correr `infra/siem-hids/configure-manager.sh`
+   después — el comentario del propio archivo dice "el repo es la fuente de verdad",
+   pero eso solo es cierto si algo efectivamente copia el repo al manager. Un `pull`
+   actualiza el checkout; no reconfigura nada que ya esté corriendo.
+
+**Fix:** `docker compose build webapp && docker compose up -d --force-recreate webapp`
+(reenrola solo, sin problemas de firewall porque Servidores→Gestión 1514/1515 ya estaba
+abierto) + volver a correr `configure-manager.sh`. Verificado de punta a punta el 14/10:
+alerta 100200 y `isolate-webapp` en el mismo segundo que el archivo, mail en
+`soc@lab.local` 15 s después. Evidencia en
+`docs/evidencias/CU-03_INC-2026-003/2026-10-14_CU-03_reenrolamiento-y-cierre.txt`.
+
+**Regla general:** después de un `git pull` que trae cambios de infra (imágenes,
+reglas, compose), no alcanza con que el checkout esté actualizado — hay que correr lo
+que aplica esos cambios al entorno vivo (`docker compose up -d --force-recreate` para
+contenedores; `configure-manager.sh` para la config del manager de Wazuh) y confirmarlo
+mirando el entorno, no el repo.

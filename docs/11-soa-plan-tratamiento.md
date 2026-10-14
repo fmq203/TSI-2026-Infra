@@ -173,14 +173,16 @@ Base: hoja "Resumen" de `excel/01-controles-mcu5-perfil-avanzado.xlsx` (47 contr
 | Gobernar | Avanzado (3) | Política (01), RACI (excel/03), decisiones fechadas | 0 / 8 / 0 / 0 | **1** | Aprobar la política; asignar RSI; SoA aprobada |
 | Identificar | Avanzado (3) | Inventario A01-A22, riesgos (03) | 1 / 5 / 2 / 0 | **1** | Escaneo de vulnerabilidades (10); aceptación del residual |
 | Proteger | Avanzado (3) | Segmentación en 4 VLANs con reglas; agentes HIDS en `ssh-client` y `webapp` | 2 / 4 / 5 / 1 | **1** | MFA obligatorio en consolas (T01, TOTP ya validado en Keycloak); credenciales (T02); respaldos (06) |
-| Detectar | Avanzado (3) | CU-01, CU-02 y CU-03 verificados de punta a punta | 4 / 3 / 1 / 0 | **2** | Fuentes de log restantes al SIEM; ruleset público (T07); retención (T08) |
-| Responder | Avanzado (3) | Plan (04), CU-02 y CU-03 cerrados con evidencia, lecciones aprendidas | 3 / 3 / 0 / 0 | **2** | Captura del mail de notificación en CU-02/CU-03; medir MTTD/MTTR |
+| Detectar | Avanzado (3) | CU-01, CU-02 y CU-03 verificados de punta a punta, incluida la notificación | 5 / 2 / 1 / 0 | **2** | Fuentes de log restantes al SIEM; ruleset público (T07); retención (T08) |
+| Responder | Avanzado (3) | Plan (04), CU-02 y CU-03 cerrados de punta a punta con MTTD/MTTR reales | 3 / 3 / 0 / 0 | **2** | Medir MTTD/MTTR de CU-01; playbooks de CU-04/CU-05 |
 | Recuperar | Avanzado (3) | Reconstrucción desde el repo (06 §0); RTO/RPO definidos (06 §1) | 0 / 4 / 1 / 0 | **1** | Respaldos de datos y prueba de restauración (06 §3) |
 
-**Lectura (actualizada 11/10):** Detectar y Responder subieron de madurez: los tres
-casos de uso (CU-01, CU-02, CU-03) están verificados de punta a punta con evidencia real
-en `docs/evidencias/`. La brecha ahora se concentra en Gobernar (aprobación formal),
-Proteger (MFA obligatorio más allá de un usuario de demo, respaldos) y Recuperar (sin
+**Lectura (actualizada 14/10):** Detectar y Responder subieron de madurez: los tres
+casos de uso (CU-01, CU-02, CU-03) están verificados de punta a punta con evidencia
+real en `docs/evidencias/`, incluida la notificación por mail en CU-02 y CU-03 (cerrada
+el 14/10, ver `brain/LEARNINGS.md`). La brecha ahora se concentra en Gobernar
+(aprobación formal), Proteger (MFA obligatorio más allá de un usuario de demo, respaldos)
+y Recuperar (sin
 prueba de restauración ejecutada).
 
 ## 5. Plan de tratamiento (resumen)

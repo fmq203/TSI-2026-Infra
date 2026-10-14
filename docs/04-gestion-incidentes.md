@@ -123,21 +123,28 @@ detección — ver `brain/LEARNINGS.md` 2026-10-14.
 
 ### INC-2026-003 — Webshell en la app de préstamos (CU-03)
 
-Implementado y **ejecutado y verificado el 11/10/2026** por R. Rampoldi (commit
-`40364c8`): agente Wazuh + FIM en tiempo real sobre `/var/www/html` de `target-webapp`,
-regla local `100200` y Active Response `isolate-webapp`. Evidencia completa en
+Implementado y verificado en detección y respuesta el 11/10/2026 por R. Rampoldi
+(commit `40364c8`): agente Wazuh + FIM en tiempo real sobre `/var/www/html` de
+`target-webapp`, regla local `100200` y Active Response `isolate-webapp`. El agente
+dejó de estar activo poco después (el contenedor vivo nunca se recreó con la imagen
+nueva) y la regla 100200 nunca llegó a sincronizarse al manager en vivo — **corregido y
+verificado de punta a punta, incluida la notificación, el 14/10/2026** (detalle en
+`brain/LEARNINGS.md` 2026-10-14). Evidencia completa en
 `docs/evidencias/CU-03_INC-2026-003/README.md`.
 
 | Campo | Valor |
 |---|---|
-| Fecha y hora (UTC) | 11/10/2026 |
-| Descripción / síntomas | Archivo PHP sospechoso agregado al webroot (`cu03-isolation-test.php`), simulando el depósito de una webshell |
+| Fecha y hora (UTC) | 14/10/2026, 01:08:34 (archivo creado y alerta/aislamiento, mismo segundo) — 01:08:49 (mail entregado) |
+| Descripción / síntomas | Archivo PHP sospechoso agregado al webroot, simulando el depósito de una webshell |
 | Severidad inicial | S1 |
 | Vector de ingreso | Web (webroot de la app de préstamos) |
 | Activo | `target-webapp` (10.10.10.10) |
 | Detección | FIM (`syscheck`, regla base **554** "File added to the system") → regla local **100200** (nivel 12, MITRE T1505.003 Web Shell) al coincidir con `/var/www/html/*.php` |
-| Respuesta | Active Response `isolate-webapp`: elimina la ruta por defecto del contenedor (deja inalcanzables DMZ y demás redes) pero preserva una ruta específica al Wazuh Manager por TCP 1514, verificado con el agente permaneciendo `Active` durante el aislamiento |
-| Evidencia preservada | 10 capturas en `docs/evidencias/CU-03_INC-2026-003/` (FIM, regla, Active Response, rutas antes/después, agente activo, puerto 1514 preservado) |
+| Respuesta | Active Response `isolate-webapp`: elimina la ruta por defecto del contenedor (deja inalcanzables DMZ y demás redes) pero preserva una ruta específica al Wazuh Manager por TCP 1514 |
+| Notificación | Mail entregado en `soc@lab.local` (ver mensaje completo en la evidencia) |
+| MTTD / MTTR | ≈ 0 s ambos (alerta y Active Response se ejecutan en el mismo segundo que el archivo) |
+| Detección → notificación | ≈ 15 s |
+| Evidencia preservada | 10 capturas del 11/10 (FIM, regla, Active Response, rutas antes/después) + `2026-10-14_CU-03_reenrolamiento-y-cierre.txt` y `2026-10-14_CU-03_mail.txt` (notificación, con timestamps) en `docs/evidencias/CU-03_INC-2026-003/` |
 | Estado | **Cerrado** |
 
 ---
@@ -165,7 +172,7 @@ regla local `100200` y Active Response `isolate-webapp`. Evidencia completa en
 |---|---|---|---|---|
 | CU-01 Reconocimiento | Suricata 1000001-1000005 → Wazuh 100100 | Ninguna (por diseño) | Mail SOC (nivel 10) | ✅ Verificado 05/10 |
 | CU-02 Fuerza bruta SSH | Wazuh 5712/5763 | **Playbook 1**: `firewall-drop` en el host (10 min) | Mail SOC (nivel 10) — **verificado** | ✅ Verificado de punta a punta 14/10 |
-| CU-03 Webshell | Wazuh FIM sobre el webroot → regla local 100200 | **Playbook 2**: `isolate-webapp` (aísla red, preserva TCP 1514 al manager) | Mail SOC (nivel 12) — pendiente, agente `webapp` no está activo al 14/10 | ✅ Detección y respuesta verificadas 11/10; agente a reenrolar |
+| CU-03 Webshell | Wazuh FIM sobre el webroot → regla local 100200 | **Playbook 2**: `isolate-webapp` (aísla red, preserva TCP 1514 al manager) | Mail SOC (nivel 12) — **verificado** | ✅ Verificado de punta a punta 14/10 |
 | CU-04 Credenciales robadas | Logs de Keycloak (MFA) | **Playbook 3** (a definir: deshabilitar cuenta) | Mail SOC | ❌ Pendiente |
 | CU-05 Exfiltración DNS | Suricata/Wazuh | — | Mail SOC | ❌ Pendiente |
 
@@ -203,10 +210,11 @@ reales: no corresponde notificación externa.
 
 | KPI | Valor al 14/10/2026 |
 |---|---|
-| MTTD por ataque simulado | CU-02 medido con precisión: **≈ 13 s** (00:45:31 → 00:45:44). CU-01/CU-03: no medido con precisión de reloj, pendiente extraerlo de `alerts.json` |
-| MTTR del SOAR | CU-02 medido con precisión: **≈ 0 s** detección→`firewall-drop` (mismo segundo); **≈ 24 s** detección→mail entregado. CU-03: contención confirmada cualitativamente, sin medir tiempos |
+| MTTD por ataque simulado | CU-02: **≈ 13 s** (00:45:31 → 00:45:44). CU-03: **≈ 0 s** (alerta en el mismo segundo que el archivo, 01:08:34). CU-01: no medido con precisión de reloj, pendiente extraerlo de `alerts.json` |
+| MTTR del SOAR | CU-02: **≈ 0 s** detección→`firewall-drop` (mismo segundo). CU-03: **≈ 0 s** detección→`isolate-webapp` (mismo segundo) |
+| Detección → notificación (mail) | CU-02: **≈ 24 s**. CU-03: **≈ 15 s** |
 | % ataques simulados detectados y mitigados | 3 de 3 ejecutados y detectados (CU-01, CU-02, CU-03); mitigación automática verificada en 2 de 3 (CU-02 `firewall-drop`, CU-03 `isolate-webapp`; CU-01 no tiene contención por diseño) |
-| % con notificación verificada | 1 de 2 que debían notificar: CU-02 ✅ (mail confirmado 14/10); CU-03 pendiente (agente `webapp` no activo) |
+| % con notificación verificada | 2 de 2 que debían notificar: CU-02 ✅ y CU-03 ✅ (mail confirmado en ambos, 14/10) |
 | Falsos positivos | No medido |
 
 ---

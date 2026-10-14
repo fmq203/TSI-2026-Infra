@@ -215,3 +215,32 @@ Comunicación con Wazuh preservada por TCP 1514
 **Estado: COMPLETADO Y VERIFICADO.**
 
 La respuesta está configurada con `timeout=600`, por lo que el aislamiento es temporal y la conectividad debe restaurarse al finalizar el período configurado.
+
+---
+
+## Actualización 14/10/2026 — reenrolamiento y notificación por mail
+
+Lo de arriba (11/10) dejó verificada la detección y la respuesta, pero el agente
+`webapp` dejó de aparecer activo poco después (el contenedor vivo del despliegue de
+referencia nunca se recreó con la imagen `tsi/web-victim:4.9.0` que trae el agente
+embebido) y la notificación por mail nunca se había podido confirmar. El 14/10 se
+reenroló el agente (`docker compose up -d --force-recreate webapp` + `configure-manager.sh`
+para sincronizar la regla 100200 al manager) y se repitió el ataque:
+
+### Línea de tiempo real (UTC)
+
+| Evento | Hora | Delta |
+|---|---|---|
+| Archivo PHP agregado al webroot | 01:08:34 | — |
+| Alerta Wazuh (regla 100200, nivel 12) | 01:08:34 | MTTD ≈ 0 s |
+| Active Response `isolate-webapp` | 01:08:34 | MTTR ≈ 0 s |
+| Mail entregado en `soc@lab.local` | 01:08:49 | +15 s |
+
+### Evidencia nueva
+
+- `2026-10-14_CU-03_reenrolamiento-y-cierre.txt` — causa del agente caído, fix aplicado,
+  alerta y aislamiento con timestamps.
+- `2026-10-14_CU-03_mail.txt` — mail completo recibido en `soc@lab.local`.
+
+**Estado CU-03 (actualizado):** **COMPLETADO Y VERIFICADO de punta a punta, incluida la
+notificación por mail.**

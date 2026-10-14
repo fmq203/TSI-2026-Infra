@@ -20,9 +20,9 @@ estado está y qué falta.
 | Router / firewall + segmentación | OPNsense (referencia) · nftables (`vagrant/`) | ✅ Funcionando |
 | NIDS | Suricata, 5 firmas propias | ✅ Funcionando |
 | SIEM + HIDS | Wazuh 4.9.0 (manager, indexer, dashboard) + agentes en `ssh-client` y `webapp` | ✅ Funcionando y verificado (CU-02, CU-03) |
-| SOAR | Wazuh Active Response (`firewall-drop`, `isolate-webapp`) | ✅ Verificado (CU-02, CU-03 — 11/10) |
+| SOAR | Wazuh Active Response (`firewall-drop`, `isolate-webapp`) | ✅ Verificado (CU-02, CU-03 — 14/10) |
 | Honeypot | Cowrie → Wazuh | 🔶 Construido, sin verificar |
-| Alertas por correo | docker-mailserver → `soc@lab.local` | 🔶 Configurado; sin captura de un mail recibido en ninguno de los casos ejecutados |
+| Alertas por correo | docker-mailserver → `soc@lab.local` | ✅ Verificado (CU-02, CU-03 — 14/10) |
 | Identidad / MFA | Keycloak 26 | 🔶 Realm `lab` con TOTP configurado y validado (11/10); WebAuthn pendiente de HTTPS |
 | Activos a proteger | App de préstamos (DVWA) + MySQL + puesto de usuario | ✅ Funcionando |
 
@@ -31,8 +31,8 @@ estado está y qué falta.
 | Caso | Estado |
 |---|---|
 | CU-01 Reconocimiento / escaneo | ✅ Verificado de punta a punta (05/10): Suricata → Wazuh → dashboard. [INC-2026-001](docs/04-gestion-incidentes.md) |
-| CU-02 Fuerza bruta SSH → bloqueo automático | ✅ Verificado de punta a punta (11/10): regla `5712` → `firewall-drop`. [INC-2026-002](docs/04-gestion-incidentes.md) — falta captura del mail |
-| CU-03 Webshell (FIM + aislamiento) | ✅ Verificado de punta a punta (11/10): regla local `100200` → `isolate-webapp`. [INC-2026-003](docs/04-gestion-incidentes.md) — falta captura del mail |
+| CU-02 Fuerza bruta SSH → bloqueo automático → mail | ✅ Verificado de punta a punta (14/10): regla `5712` → `firewall-drop` → mail en `soc@lab.local` (MTTD ~13s, MTTR ~0s). [INC-2026-002](docs/04-gestion-incidentes.md) |
+| CU-03 Webshell (FIM + aislamiento) → mail | ✅ Verificado de punta a punta (14/10): regla local `100200` → `isolate-webapp` → mail en `soc@lab.local` (MTTD/MTTR ~0s). [INC-2026-003](docs/04-gestion-incidentes.md) |
 | CU-04 Credenciales robadas · CU-05 Exfiltración por DNS | ❌ Pendientes |
 
 ### Documentación (borradores, pendientes de revisión y aprobación)
@@ -52,14 +52,12 @@ estado está y qué falta.
 
 ### Lo que falta (hacia la auditoría del 14/10)
 
-1. **Captura del mail** de alerta en `soc@lab.local` para CU-02 y CU-03 (detección y
-   respuesta ya están verificadas; falta ese último eslabón de la cadena).
-2. **WebAuthn** en Keycloak (TOTP ya validado; WebAuthn requiere HTTPS) y MFA en el
+1. **WebAuthn** en Keycloak (TOTP ya validado; WebAuthn requiere HTTPS) y MFA en el
    dashboard de Wazuh.
-3. Verificar Cowrie en el dashboard, retención de logs de 90 días, respaldos con prueba
+2. Verificar Cowrie en el dashboard, retención de logs de 90 días, respaldos con prueba
    de restauración.
-4. Documentos `10` (vulnerabilidades) y `28` (informe Blue Team).
-5. Medir MTTD/MTTR con precisión (hora exacta del ataque vs. de la alerta) en CU-01/02/03.
+3. Documentos `10` (vulnerabilidades) y `28` (informe Blue Team).
+4. Medir MTTD/MTTR con precisión en CU-01 (ya medido en CU-02 y CU-03).
 
 ### Aclaraciones
 

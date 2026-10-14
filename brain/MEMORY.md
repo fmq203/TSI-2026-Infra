@@ -71,7 +71,7 @@ redes Docker son macvlan, creadas por `infra/create-networks.sh`.
 | nids | `suricata` | `10.10.20.50` |
 | mail | `mailserver` | `10.10.20.20` |
 | honeypot | `cowrie` | `10.10.20.30` |
-| targets | `target-webapp` (DVWA) / `target-app-db` | `10.10.10.10` / `.11` |
+| targets | `target-webapp` (imagen propia `web-victim/`, DVWA + agente Wazuh embebido + FIM) / `target-app-db` | `10.10.10.10` / `.11` |
 | targets | `target-ssh-client` (imagen propia `ssh-victim/`, SSH 2222 + agente Wazuh `ssh-client`) | `10.10.30.10` |
 | (futuro) | `wazo` / `alerting` | `10.10.20.40` / `10.10.90.40` (reservadas) |
 
@@ -92,21 +92,21 @@ Todo contenedor nuevo con IP fija: el IPAM de Docker no sabe que `.5` es de
 ## Pendientes
 
 Lista mantenida en `README.md` → "Pendientes" (infra, documentación, seguridad) y estado
-por día en [[plan-recuperacion-atraso]]. Al 14/10: CU-01, CU-02 y CU-03 verificados en
-detección y respuesta (evidencia en `docs/evidencias/`); CU-02 además con la
-notificación por mail verificada de punta a punta (ver [[LEARNINGS]] 2026-10-14). Sigue
-pendiente: notificación por mail de CU-03 (su agente `webapp` no aparece activo en
-`agent_control -l` al 14/10 — re-enrolar y confirmar); Cowrie sin verificar en el
-dashboard; MFA con TOTP validado en Keycloak (realm `lab`) pero WebAuthn bloqueado por
-falta de HTTPS; probar `vagrant up` de punta a punta en una máquina física. Documentación:
-borradores de 00, 01, 03, 04, 06, 07, 09, 11, 12, 40, 99 y los 4 Excel MCU
-(`docs/excel/`); faltan 10, 28. Riesgos abiertos priorizados en `docs/03-analisis-riesgos.md`.
+por día en [[plan-recuperacion-atraso]]. Al 14/10: **CU-01, CU-02 y CU-03 verificados de
+punta a punta** (detección → respuesta → notificación por mail), evidencia completa en
+`docs/evidencias/` (ver [[LEARNINGS]] 2026-10-14 por las causas y fixes de red/config).
+Sigue pendiente: Cowrie sin verificar en el dashboard; MFA con TOTP validado en Keycloak
+(realm `lab`) pero WebAuthn bloqueado por falta de HTTPS; probar `vagrant up` de punta a
+punta en una máquina física. Documentación: borradores de 00, 01, 03, 04, 06, 07, 09, 11,
+12, 40, 99 y los 4 Excel MCU (`docs/excel/`); faltan 10, 28. Riesgos abiertos priorizados
+en `docs/03-analisis-riesgos.md`.
 
-**Agentes Wazuh activos al 14/10** (`agent_control -l`): solo `000` (manager) y `001`
-(`ssh-client`). El agente `webapp` que R. Rampoldi enroló el 11/10 (entonces con ID
-`003`) no aparece — probablemente el contenedor se reinició sin volver a conectar. El ID
-de `ssh-client` también cambió de `002` (11/10) a `001` (14/10), señal de que también se
-reenroló en algún momento entre esas fechas.
+**Agentes Wazuh activos al 14/10** (`agent_control -l`): `000` (manager), `001`
+(`ssh-client`) y `002` (`webapp`, reenrolado el 14/10 tras recrear el contenedor con la
+imagen `tsi/web-victim:4.9.0` que trae el agente embebido — el contenedor anterior
+llevaba 11 días corriendo la imagen vieja sin agente). Los IDs no son estables entre
+despliegues: cada vez que se recrea un contenedor sin el volumen de `/var/ossec/etc`
+persistido, se reenrola con un ID nuevo.
 
 Orden de arranque de stacks: `identity nids honeypot siem-hids mail targets` — nids y
 honeypot antes que siem-hids porque el manager monta sus volúmenes de logs como
