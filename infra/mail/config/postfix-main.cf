@@ -1,0 +1,13 @@
+# Override de Postfix cargado por docker-mailserver en /tmp/docker-mailserver/postfix-main.cf.
+#
+# Por qué: wazuh.manager vive en net_mgmt (10.10.90.0/24), una red Docker distinta a la
+# de mailserver (net_dmz). PERMIT_DOCKER=network (docker-compose.yml) extiende mynetworks
+# solo a la red del propio contenedor (net_dmz), así que el manager no cae ahí y pasa por
+# el filtro anti-spam postscreen completo. El cliente SMTP de wazuh-maild no respeta el
+# protocolo que postscreen exige (manda datos antes del saludo completo) y el test
+# PREGREET lo rechaza con "550 5.5.1 Protocol error" — por eso nunca llegaba el mail de
+# alerta aunque la detección y la respuesta automática (Active Response) sí funcionaban.
+#
+# Encontrado y corregido el 14/10/2026 al intentar capturar la evidencia de notificación
+# de CU-02/CU-03 (ver docs/evidencias/CU-02/README.md y brain/LEARNINGS.md).
+mynetworks = 127.0.0.0/8 [::1]/128 [fe80::]/64 172.16.0.0/12 10.10.90.0/24

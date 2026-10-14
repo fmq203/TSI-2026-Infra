@@ -141,3 +141,32 @@ Diagnóstico que funcionó, por tramos: `nc -zv` al 1515 desde un contenedor des
 del router; prueba con `/dev/tcp` desde la IP real del agente (una regla `/32` no cubre a
 un contenedor de prueba con otra IP). Resultado 07/10 15:31 (UTC−3): `ssh-client` Active,
 con FIM, SCA (CIS Debian 12) y rootcheck corriendo.
+
+## 2026-10-14 — CU-02/CU-03 nunca habían mandado el mail de alerta: dos causas, mismo patrón que el 07/10
+
+Igual que el enrolamiento del agente (entrada anterior): una interfaz OPT nueva de
+OPNsense bloquea todo lo que entra por default, y acá nadie había agregado la regla
+Gestión → DMZ TCP 25. Sin ella, `wazuh.manager` se quedaba colgado al conectar a
+`mailserver:25` (timeout de TCP, no un "refused" — la misma firma que la vez anterior).
+
+Con el puerto abierto apareció una **segunda causa, nueva**: Postfix seguía rechazando
+el mail con `550 5.5.1 Protocol error`. El filtro anti-spam `postscreen` de
+`docker-mailserver` solo deja pasar sin chequeos a las IPs dentro de `mynetworks`, y
+`PERMIT_DOCKER=network` (ya configurado) solo agrega la red Docker **propia** del
+contenedor de mail (`net_dmz`) — no agrega `net_mgmt`, que es una red Docker distinta
+donde vive `wazuh.manager`. Sin estar en `mynetworks`, el cliente SMTP de `wazuh-maild`
+pasa por el test `PREGREET` de postscreen (detecta bots que mandan datos antes del
+saludo SMTP completo) y lo rechaza, porque `wazuh-maild` no espera ese saludo.
+
+**Fix:** agregar `10.10.90.0/24` a `mynetworks` vía un archivo de config propio
+(`infra/mail/config/postfix-main.cf`, montado en `/tmp/docker-mailserver/` — ahí
+`docker-mailserver` lo aplica con `postconf -e` en cada arranque, así que sobrevive a
+`docker compose up --force-recreate`). Verificado de punta a punta el 14/10: CU-02
+completo (detección 5712 → `firewall-drop` → mail en `soc@lab.local`), MTTD ~13 s,
+MTTR ~0 s, notificación +11 s después de la alerta. Evidencia en
+`docs/evidencias/CU-02/2026-10-14_CU-02_mail.txt`.
+
+**Regla general para la próxima VLAN/regla de firewall nueva:** no asumir que un
+servicio "configurado" realmente manda tráfico — probar el salto de red real (`/dev/tcp`
+con `timeout`, nunca sin él: sin timeout un bloqueo por firewall cuelga la sesión en vez
+de fallar rápido) antes de dar por buena la cadena completa.

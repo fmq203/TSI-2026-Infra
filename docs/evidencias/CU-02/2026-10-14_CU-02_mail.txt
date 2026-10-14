@@ -1,0 +1,42 @@
+Return-Path: <wazuh@lab.local>
+Delivered-To: soc@lab.local
+Received: from mail.lab.local
+        by mail.lab.local with LMTP
+        id 5AjRN8PQzmrYshwAH6nRKQ
+        (envelope-from <wazuh@lab.local>)
+        for <soc@lab.local>; Wed, 14 Oct 2026 00:45:55 +0000
+Received: from localhost (localhost [127.0.0.1])
+        by mail.lab.local (Postfix) with ESMTP id CF9744B5C5
+        for <soc@lab.local>; Wed, 14 Oct 2026 00:45:55 +0000 (UTC)
+Authentication-Results: mail.lab.local; dmarc=none (p=none dis=none) header.from=lab.local
+Received: from notify.ossec.net (unknown [10.10.90.10])
+        by mail.lab.local (Postfix) with SMTP id 6404E4B5C4
+        for <soc@lab.local>; Wed, 14 Oct 2026 00:45:55 +0000 (UTC)
+To: <soc@lab.local>
+From: Wazuh <wazuh@lab.local>
+Date: Wed, 14 Oct 2026 00:45:55 +0000
+Subject: Wazuh notification - (ssh-client) any - Alert level 10
+Message-Id: <20261014004555.CF9744B5C5@mail.lab.local>
+
+
+Wazuh Notification.
+2026 Oct 14 00:45:44
+
+Received From: (ssh-client) any->/var/log/auth.log
+Rule: 5712 fired (level 10) -> "sshd: brute force trying to get access to the system. Non existent user."
+Src IP: 10.10.30.50
+Portion of the log(s):
+
+Oct 14 00:45:43 ssh-client sshd[22544]: Failed password for invalid user labnouser from 10.10.30.50 port 34048 ssh2
+Oct 14 00:45:41 ssh-client sshd[22544]: Invalid user labnouser from 10.10.30.50 port 34048
+Oct 14 00:45:39 ssh-client sshd[22542]: Failed password for invalid user labnouser from 10.10.30.50 port 34046 ssh2
+Oct 14 00:45:37 ssh-client sshd[22542]: Invalid user labnouser from 10.10.30.50 port 34046
+Oct 14 00:45:36 ssh-client sshd[22540]: Failed password for invalid user labnouser from 10.10.30.50 port 34040 ssh2
+Oct 14 00:45:34 ssh-client sshd[22540]: Invalid user labnouser from 10.10.30.50 port 34040
+Oct 14 00:45:33 ssh-client sshd[22538]: Failed password for invalid user labnouser from 10.10.30.50 port 34036 ssh2
+Oct 14 00:45:31 ssh-client sshd[22538]: Invalid user labnouser from 10.10.30.50 port 34036
+
+
+
+
+ --END OF NOTIFICATION

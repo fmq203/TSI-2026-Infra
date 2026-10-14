@@ -4,10 +4,16 @@
 > notificación, que es lo que el auditor pide ver (LETRA.md §6.6) y lo que referencian
 > `04-gestion-incidentes.md`, `07-monitoreo-logs.md` y el Excel de controles.
 >
-> Al 11/10/2026 ya se validaron y documentaron **CU-01**, **CU-02** y **CU-03** con evidencia real.
-> CU-01 quedó verificado de punta a punta como Nmap → Suricata → Wazuh; CU-02 como
-> fuerza bruta SSH → Wazuh → Active Response `firewall-drop` → bloqueo efectivo; y CU-03 como
-> archivo PHP sospechoso → FIM → regla local 100200 → Active Response `isolate-webapp` → aislamiento del servidor con comunicación al SIEM preservada.
+> Al 11/10/2026 ya se habían validado y documentado **CU-01**, **CU-02** y **CU-03** con
+> evidencia real de detección y respuesta. El 14/10/2026 se cerró el eslabón que
+> faltaba — la **notificación por mail** — para CU-02: estaba bloqueada por dos causas de
+> red/config (regla de firewall Gestión→DMZ y filtro anti-spam del mailserver, ver
+> `brain/LEARNINGS.md` 2026-10-14). CU-02 queda verificado de punta a punta: fuerza
+> bruta SSH → Wazuh (regla 5712) → Active Response `firewall-drop` → mail en
+> `soc@lab.local`, con MTTD/MTTR reales medidos. CU-01 (Nmap → Suricata → Wazuh) y CU-03
+> (archivo PHP → FIM → regla 100200 → `isolate-webapp`) siguen verificados en detección
+> y respuesta; la notificación por mail de CU-03 queda pendiente porque su agente
+> (`webapp`) no apareció activo al 14/10.
 > Las capturas generadas se detallan en el índice de evidencias al final de este archivo.
 
 ## Convención de nombres
@@ -411,12 +417,14 @@ Por lo tanto, el aislamiento no impidió que el servidor siguiera reportando al 
 | `08_rutas_webapp_aislado.png` | CU-03 | Ruta por defecto eliminada y DMZ inaccesible | 11/10/2026 |
 | `09_agente_webapp_activo_durante_aislamiento.png` | CU-03 | Agente ID 003 permanece `Active` durante el aislamiento | 11/10/2026 |
 | `10_wazuh_1514_preservado.png` | CU-03 | Comunicación TCP 1514 con Wazuh preservada | 11/10/2026 |
+| `CU-02/2026-10-14_CU-02_deteccion-respuesta.txt` | CU-02 | Repetición con timestamps reales (MTTD/MTTR) tras corregir el acceso a mail | 14/10/2026 |
+| `CU-02/2026-10-14_CU-02_mail.txt` | CU-02 | Mail de alerta recibido en `soc@lab.local` — eslabón de notificación, antes pendiente | 14/10/2026 |
 
 ### Estado resumido
 
 | Caso | Estado |
 |---|---|
 | CU-01 — Reconocimiento contra la DMZ | ✅ Completado y verificado |
-| CU-02 — Fuerza bruta SSH + respuesta automática | ✅ Completado y verificado |
-| CU-03 — Webshell + FIM + aislamiento automático | ✅ Completado y verificado |
+| CU-02 — Fuerza bruta SSH + respuesta automática + **mail** | ✅ Completado y verificado de punta a punta (14/10) |
+| CU-03 — Webshell + FIM + aislamiento automático | ✅ Detección y respuesta verificadas (11/10); **notificación por mail pendiente** — el agente `webapp` no apareció activo al 14/10, ver `brain/MEMORY.md` |
 

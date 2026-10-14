@@ -55,3 +55,35 @@ CU-02 validado correctamente:
 `Fuerza bruta SSH → Regla 5712 → Active Response → firewall-drop → IP atacante bloqueada`
 
 Estado: **COMPLETADO**
+
+---
+
+## Actualización 14/10/2026 — notificación por mail
+
+Lo de arriba (11/10) dejó verificada la detección y la respuesta, pero no se había
+podido confirmar la **notificación** (el mail a `soc@lab.local` nunca llegaba). Repitiendo
+el mismo ataque el 14/10 se encontraron y corrigieron dos problemas de red/config
+(detalle en `brain/LEARNINGS.md`, entrada 2026-10-14):
+
+1. Faltaba la regla de firewall Gestión → DMZ TCP 25 en OPNsense.
+2. Postfix rechazaba el mail del manager (`550 5.5.1 Protocol error`, filtro anti-spam
+   `postscreen`) porque `net_mgmt` no estaba en `mynetworks`. Corregido de forma
+   persistente en `infra/mail/config/postfix-main.cf`.
+
+### Línea de tiempo real (UTC)
+
+| Evento | Hora | Delta |
+|---|---|---|
+| Primer intento fallido | 00:45:31 | — |
+| Alerta Wazuh (regla 5712, nivel 10) | 00:45:44 | MTTD ≈ 13 s |
+| Active Response `firewall-drop` | 00:45:44 | MTTR ≈ 0 s |
+| Mail entregado en `soc@lab.local` | 00:45:55 | +11 s |
+
+### Evidencia nueva
+
+- `2026-10-14_CU-02_deteccion-respuesta.txt` — alerta 5712 completa y `iptables` tras el
+  bloqueo.
+- `2026-10-14_CU-02_mail.txt` — mail completo recibido en `soc@lab.local`.
+
+**Estado CU-02 (actualizado):** **COMPLETADO Y VERIFICADO de punta a punta, incluida la
+notificación por mail.**

@@ -90,27 +90,36 @@ INC-2026-1xx.
 
 ### INC-2026-002 — Fuerza bruta SSH (CU-02)
 
-Cadena construida el 05/10/2026 (commit `fd562cf`), restaurada el 07/10 (`543c519`) y
-**ejecutada y verificada el 11/10/2026** por R. Rampoldi (commit `40364c8`). Evidencia
-completa en `docs/evidencias/CU-02/README.md`.
+Cadena construida el 05/10/2026 (commit `fd562cf`), restaurada el 07/10 (`543c519`),
+verificada en detección y respuesta el 11/10/2026 por R. Rampoldi (commit `40364c8`), y
+**verificada de punta a punta incluida la notificación el 14/10/2026**. La notificación
+no llegaba por dos causas de red/config (firewall Gestión→DMZ puerto 25 cerrado +
+`mynetworks` de Postfix sin `net_mgmt`), corregidas ese mismo día — detalle en
+`brain/LEARNINGS.md` 2026-10-14. Evidencia completa en `docs/evidencias/CU-02/README.md`.
 
 | Campo | Valor |
 |---|---|
-| Fecha y hora (UTC) | 11/10/2026 (hora exacta: ver metadata de las capturas en `docs/evidencias/CU-02/`) |
-| Descripción / síntomas | Múltiples intentos fallidos de login SSH contra `10.10.30.10:2222` con usuario **inexistente** (`usuariofalso`), desde un host atacante en `10.10.30.50`. |
+| Fecha y hora (UTC) | 14/10/2026, 00:45:31 (primer intento) — 00:45:55 (mail entregado) |
+| Descripción / síntomas | Múltiples intentos fallidos de login SSH contra `10.10.30.10:2222` con usuario **inexistente**, desde un host atacante en `10.10.30.50`. |
 | Severidad inicial | S2 |
 | Vector de ingreso | Red interna (SSH) |
 | Activo | `target-ssh-client` — simula un puesto de Atención al cliente |
 | Detección | Agente Wazuh embebido → regla estándar de sshd **5712** ("brute force trying to get access to the system. Non existent user."), nivel 10 |
-| Respuesta | Active Response `firewall-drop` ejecutado contra `10.10.30.50`; se verificó el bloqueo reintentando la conexión SSH (`Connection timed out`) durante los 600 s configurados |
-| Evidencia preservada | `01_alerta_wazuh_regla_5712.png`, `02_active_response_firewall_drop.png`, `03_bloqueo_ssh_timeout.png` en `docs/evidencias/CU-02/` |
-| Estado | **Cerrado** |
+| Respuesta | Active Response `firewall-drop` ejecutado contra `10.10.30.50`, confirmado en `iptables -L INPUT -n` |
+| Notificación | Mail entregado en `soc@lab.local` (ver mensaje completo en la evidencia) |
+| MTTD | ≈ 13 s (00:45:31 primer intento → 00:45:44 alerta) |
+| MTTR (detección → contención) | ≈ 0 s (el Active Response se ejecuta en el mismo segundo que la alerta) |
+| Detección → notificación | ≈ 24 s (00:45:44 alerta → 00:45:55 mail entregado) |
+| Evidencia preservada | `docs/evidencias/CU-02/` — capturas del 11/10 (detección/respuesta) + `2026-10-14_CU-02_deteccion-respuesta.txt` y `2026-10-14_CU-02_mail.txt` (notificación, con timestamps) |
+| Estado | **Cerrado, verificado de punta a punta** |
 
-**Nota de aprendizaje:** el equipo había intentado antes la simulación con un usuario
+**Notas de aprendizaje:** el equipo había intentado antes la simulación con un usuario
 **válido** (`labuser`) y contraseñas incorrectas, sin generar la alerta 5712/5763 en las
-pruebas previas (ver `brain/LEARNINGS.md`). Lo que destrabó la detección fue atacar con
-un usuario que **no existe** en el sistema, que es el patrón que cubre la regla 5712, y
-lanzar el ataque desde un host directo en `net_usr` (no desde el router).
+pruebas previas. Lo que destrabó la detección fue atacar con un usuario que **no
+existe** en el sistema, que es el patrón que cubre la regla 5712, y lanzar el ataque
+desde un host directo en `net_usr` (no desde el router). Además, la notificación por
+mail estuvo bloqueada 14 días por dos causas de red/config no relacionadas con la
+detección — ver `brain/LEARNINGS.md` 2026-10-14.
 
 ### INC-2026-003 — Webshell en la app de préstamos (CU-03)
 
@@ -155,8 +164,8 @@ regla local `100200` y Active Response `isolate-webapp`. Evidencia completa en
 | Caso | Detección | Contención automática | Notificación | Estado |
 |---|---|---|---|---|
 | CU-01 Reconocimiento | Suricata 1000001-1000005 → Wazuh 100100 | Ninguna (por diseño) | Mail SOC (nivel 10) | ✅ Verificado 05/10 |
-| CU-02 Fuerza bruta SSH | Wazuh 5712/5763 | **Playbook 1**: `firewall-drop` en el host (10 min) | Mail SOC (nivel 10) — **no hay captura del mail en la evidencia**, a confirmar | ✅ Detección y respuesta verificadas 11/10 |
-| CU-03 Webshell | Wazuh FIM sobre el webroot → regla local 100200 | **Playbook 2**: `isolate-webapp` (aísla red, preserva TCP 1514 al manager) | Mail SOC (nivel 12) — **no hay captura del mail en la evidencia**, a confirmar | ✅ Detección y respuesta verificadas 11/10 |
+| CU-02 Fuerza bruta SSH | Wazuh 5712/5763 | **Playbook 1**: `firewall-drop` en el host (10 min) | Mail SOC (nivel 10) — **verificado** | ✅ Verificado de punta a punta 14/10 |
+| CU-03 Webshell | Wazuh FIM sobre el webroot → regla local 100200 | **Playbook 2**: `isolate-webapp` (aísla red, preserva TCP 1514 al manager) | Mail SOC (nivel 12) — pendiente, agente `webapp` no está activo al 14/10 | ✅ Detección y respuesta verificadas 11/10; agente a reenrolar |
 | CU-04 Credenciales robadas | Logs de Keycloak (MFA) | **Playbook 3** (a definir: deshabilitar cuenta) | Mail SOC | ❌ Pendiente |
 | CU-05 Exfiltración DNS | Suricata/Wazuh | — | Mail SOC | ❌ Pendiente |
 
@@ -192,11 +201,12 @@ reales: no corresponde notificación externa.
 
 ## 6. KPIs (LETRA.md §6.4)
 
-| KPI | Valor al 11/10/2026 |
+| KPI | Valor al 14/10/2026 |
 |---|---|
-| MTTD por ataque simulado | No medido con precisión de reloj — las capturas no incluyen el timestamp exacto del ataque junto al de la alerta; **pendiente** extraerlo de los logs crudos (`alerts.json`) para CU-01/02/03 |
-| MTTR del SOAR | No medido con precisión — CU-02 confirmó el bloqueo cualitativamente (timeout SSH) pero sin medir el tiempo detección→DROP; CU-03 ídem con el aislamiento |
+| MTTD por ataque simulado | CU-02 medido con precisión: **≈ 13 s** (00:45:31 → 00:45:44). CU-01/CU-03: no medido con precisión de reloj, pendiente extraerlo de `alerts.json` |
+| MTTR del SOAR | CU-02 medido con precisión: **≈ 0 s** detección→`firewall-drop` (mismo segundo); **≈ 24 s** detección→mail entregado. CU-03: contención confirmada cualitativamente, sin medir tiempos |
 | % ataques simulados detectados y mitigados | 3 de 3 ejecutados y detectados (CU-01, CU-02, CU-03); mitigación automática verificada en 2 de 3 (CU-02 `firewall-drop`, CU-03 `isolate-webapp`; CU-01 no tiene contención por diseño) |
+| % con notificación verificada | 1 de 2 que debían notificar: CU-02 ✅ (mail confirmado 14/10); CU-03 pendiente (agente `webapp` no activo) |
 | Falsos positivos | No medido |
 
 ---

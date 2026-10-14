@@ -92,12 +92,21 @@ Todo contenedor nuevo con IP fija: el IPAM de Docker no sabe que `.5` es de
 ## Pendientes
 
 Lista mantenida en `README.md` → "Pendientes" (infra, documentación, seguridad) y estado
-por día en [[plan-recuperacion-atraso]]. Al 06/10: Suricata y Cowrie conectados a Wazuh
-(Cowrie sin verificar), CU-02 construido sin verificar, falta agente en `webapp` (CU-03),
-MFA en Keycloak, y probar `vagrant up` de punta a punta en una máquina física.
-Documentación al 07/10: borradores de 00, 01, 03, 04, 06, 07, 09, 11, 12, 40, 99 y los 4
-Excel MCU (`docs/excel/`); faltan 10, 28 y **toda la evidencia** (`docs/evidencias/`
-vacía). Riesgos abiertos priorizados en `docs/03-analisis-riesgos.md`.
+por día en [[plan-recuperacion-atraso]]. Al 14/10: CU-01, CU-02 y CU-03 verificados en
+detección y respuesta (evidencia en `docs/evidencias/`); CU-02 además con la
+notificación por mail verificada de punta a punta (ver [[LEARNINGS]] 2026-10-14). Sigue
+pendiente: notificación por mail de CU-03 (su agente `webapp` no aparece activo en
+`agent_control -l` al 14/10 — re-enrolar y confirmar); Cowrie sin verificar en el
+dashboard; MFA con TOTP validado en Keycloak (realm `lab`) pero WebAuthn bloqueado por
+falta de HTTPS; probar `vagrant up` de punta a punta en una máquina física. Documentación:
+borradores de 00, 01, 03, 04, 06, 07, 09, 11, 12, 40, 99 y los 4 Excel MCU
+(`docs/excel/`); faltan 10, 28. Riesgos abiertos priorizados en `docs/03-analisis-riesgos.md`.
+
+**Agentes Wazuh activos al 14/10** (`agent_control -l`): solo `000` (manager) y `001`
+(`ssh-client`). El agente `webapp` que R. Rampoldi enroló el 11/10 (entonces con ID
+`003`) no aparece — probablemente el contenedor se reinició sin volver a conectar. El ID
+de `ssh-client` también cambió de `002` (11/10) a `001` (14/10), señal de que también se
+reenroló en algún momento entre esas fechas.
 
 Orden de arranque de stacks: `identity nids honeypot siem-hids mail targets` — nids y
 honeypot antes que siem-hids porque el manager monta sus volúmenes de logs como

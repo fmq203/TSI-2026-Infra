@@ -1,0 +1,27 @@
+Captura 14/10/2026 — cierre del eslabón de notificación de CU-02 (INC-2026-002).
+Detección y respuesta ya habían sido verificadas por R. Rampoldi el 11/10 (ver README.md
+de esta misma carpeta); esta captura agrega la notificación por mail, que faltaba.
+
+=== Línea de tiempo (UTC) ===
+00:45:31  Primer intento fallido (sshd: Invalid user labnouser from 10.10.30.50)
+00:45:44  Alerta Wazuh, regla 5712, nivel 10 ("Non existent user")        -> MTTD ~13 s
+00:45:44  Active Response firewall-drop ejecutado sobre 10.10.30.50       -> MTTR ~0 s
+00:45:55  Mail entregado en soc@lab.local (ver 2026-10-14_CU-02_mail.txt) -> +11 s
+
+=== docker exec wazuh.manager grep -E '"id":"5712"' /var/ossec/logs/alerts/alerts.json | tail -1 ===
+{"timestamp":"2026-10-14T00:45:44.256+0000","rule":{"level":10,"description":"sshd: brute force trying to get access to the system. Non existent user.","id":"5712","mitre":{"id":["T1110"],"tactic":["Credential Access"],"technique":["Brute Force"]},"frequency":8,"firedtimes":3,"mail":true,"groups":["syslog","sshd","authentication_failures"]},"agent":{"id":"001","name":"ssh-client","ip":"10.10.30.10"},"manager":{"name":"wazuh.manager"},"id":"1791938744.35999","previous_output":"Oct 14 00:45:41 ssh-client sshd[22544]: Invalid user labnouser from 10.10.30.50 port 34048\nOct 14 00:45:39 ssh-client sshd[22542]: Failed password for invalid user labnouser from 10.10.30.50 port 34046 ssh2\nOct 14 00:45:37 ssh-client sshd[22542]: Invalid user labnouser from 10.10.30.50 port 34046\nOct 14 00:45:36 ssh-client sshd[22540]: Failed password for invalid user labnouser from 10.10.30.50 port 34040 ssh2\nOct 14 00:45:34 ssh-client sshd[22540]: Invalid user labnouser from 10.10.30.50 port 34040\nOct 14 00:45:33 ssh-client sshd[22538]: Failed password for invalid user labnouser from 10.10.30.50 port 34036 ssh2\nOct 14 00:45:31 ssh-client sshd[22538]: Invalid user labnouser from 10.10.30.50 port 34036","full_log":"Oct 14 00:45:43 ssh-client sshd[22544]: Failed password for invalid user labnouser from 10.10.30.50 port 34048 ssh2","data":{"srcip":"10.10.30.50","srcuser":"labnouser"},"location":"/var/log/auth.log"}
+
+=== docker exec target-ssh-client iptables -L INPUT -n (tras la respuesta) ===
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+DROP       0    --  10.10.30.50          0.0.0.0/0
+
+=== Causa raíz de por qué no llegaba el mail antes de esta captura, y su fix ===
+wazuh.manager vive en net_mgmt (10.10.90.0/24); mailserver en net_dmz. El firewall
+(OPNsense) bloqueaba Gestión -> DMZ puerto 25 (regla faltante, agregada por el equipo
+el 14/10). Una vez abierto el puerto, Postfix seguía rechazando el mail con
+"550 5.5.1 Protocol error" porque wazuh.manager no caía dentro de `mynetworks` de
+Postfix y pasaba por el filtro anti-spam `postscreen`, que no tolera la forma en que
+wazuh-maild habla SMTP (envía datos antes del saludo completo: test PREGREET).
+Fix aplicado y dejado persistente en infra/mail/config/postfix-main.cf (agrega
+net_mgmt a mynetworks). Detalle en brain/LEARNINGS.md.

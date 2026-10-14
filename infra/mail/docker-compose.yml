@@ -16,6 +16,10 @@ services:
     volumes:
       - mail_data:/var/mail-state
       - mail_config:/tmp/docker-mailserver
+      # mynetworks ampliado a net_mgmt: PERMIT_DOCKER=network solo cubre la red propia
+      # del contenedor (net_dmz); sin esto, wazuh.manager (net_mgmt) no entra en
+      # permit_mynetworks y postscreen rechaza su mail (ver el comentario del archivo).
+      - ./config/postfix-main.cf:/tmp/docker-mailserver/postfix-main.cf
       # Certificado generado por ./generate-self-signed-cert.sh — SSL_TYPE=self-signed
       # NO lo genera solo, falla ("Missing expected file(s)") si ./ssl/ no existe.
       - ./ssl:/tmp/docker-mailserver/ssl
