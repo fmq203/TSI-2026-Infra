@@ -14,9 +14,9 @@
 | Campo | Valor |
 |---|---|
 | Código | ARQ-T3-01 |
-| Versión | 0.4 (borrador — falta aprobación docente) |
-| Equipo | Blue Team — `[nombres]` |
-| Fecha | `[DD/MM/2026]` |
+| Versión | 0.5 (borrador — falta aprobación docente) |
+| Equipo | Blue Team — fmq203, Renzo Rampoldi |
+| Fecha | 14/10/2026 |
 | Aprobación | `[Docente]` — pendiente |
 
 ---
@@ -51,8 +51,8 @@ las VMs): el router y `docker-host` tienen una NIC dedicada por VLAN.
 | `honeypot` (Docker, VLAN DMZ) | Trampa de reconocimiento | Cowrie | 10.10.20.30 | ~0.25 GB | ✅ |
 | `wazo` (Docker, VLAN DMZ) | Telefonía/atención al cliente | Wazo PBX | 10.10.20.40 (reservada) | ~1.5-2 GB | ❌ no construido |
 | `alerting` (Docker, VLAN Gestión) | 2º canal de alertas | Relay webhook | 10.10.90.40 (reservada) | ~0.1 GB | ❌ no construido |
-| `targets: webapp + db` (Docker, VLAN Servidores) | App de préstamos | DVWA + MySQL 8.0 | 10.10.10.10 (DB .11) | ~1 GB | ✅ |
-| `targets: ssh-client` (Docker, VLAN Usuarios) | Host SSH víctima | `linuxserver/openssh-server` | 10.10.30.10 | — | ✅ |
+| `targets: webapp + db` (Docker, VLAN Servidores) | App de préstamos | DVWA + MySQL 8.0, imagen propia `web-victim/` con agente Wazuh embebido + FIM en tiempo real sobre `/var/www/html` | 10.10.10.10 (DB .11) | ~1 GB | ✅ agente verificado (CU-03, 14/10) |
+| `targets: ssh-client` (Docker, VLAN Usuarios) | Host SSH víctima | Imagen propia `ssh-victim/`: OpenSSH 2222 + agente Wazuh embebido, contraseña débil a propósito | 10.10.30.10 | — | ✅ agente verificado (CU-02, 14/10) |
 | `soar-thehive-optional` | SOAR ampliado | TheHive + Cortex + Cassandra + ES | — | ~3-4 GB | ❌ no construido, no hace falta (RF-06 con Wazuh Active Response) |
 
 ✅ = construido y probado. Todos los contenedores llevan IP fija.
@@ -62,42 +62,151 @@ las VMs): el router y `docker-host` tienen una NIC dedicada por VLAN.
 > su interfaz de captura es siempre `eth0`. Hoy ve el tráfico de la DMZ, no un espejo
 > explícito del router — pendiente de decisión, ver `infra/README.md` → "Qué falta".
 
-### 1.3 Diagrama (texto — reemplazar por imagen en `docs/evidencias/` cuando esté armada)
+### 1.3 Diagrama de red (topología real, 14/10/2026)
 
-```
-                Internet / WAN (en VirtualBox: vlan_wan, 203.0.113.0/24)
-                           │
-                 ┌─────────▼─────────┐
-                 │      router        │  OPNsense (o nftables), NAT, reglas entre VLANs
-                 └───┬───┬───┬───┬────┘
-      VLAN10 Srv .254│   │   │   │.254 VLAN90 Mgmt
-   ┌─────────────────┘   │   │   └──────────────────┐
-   │           VLAN20 DMZ.254│.254 VLAN30 Usr        │
-   │                      │    │                     │
-┌──▼─────────────────┐ ┌──▼─────────────┐ ┌──────────▼───┐ ┌─▼────────────────────────┐
-│ targets webapp .10  │ │ mail .20        │ │ ssh-client   │ │ siem-hids .10/.11/.12    │
-│ targets db .11      │ │ honeypot .30    │ │ .10 (víctima)│ │  (manager/indexer/dash)  │
-│                     │ │ nids .50        │ │              │ │ keycloak .20 / db .21    │
-│                     │ │ wazo .40 ❌     │ │              │ │ alerting .40 ❌           │
-│ docker-host .5      │ │ docker-host .5  │ │ docker-host .5│ │ docker-host .5           │
-└─────────────────────┘ └─────────────────┘ └──────────────┘ └──────────────────────────┘
+```mermaid
+flowchart TB
+    WAN(("Internet / WAN"))
+    ROUTER["router / firewall<br/>OPNsense (o nftables)<br/>NAT + reglas entre VLANs<br/>.254 en cada VLAN"]
+    WAN --- ROUTER
+
+    subgraph SRV["VLAN 10 — Servidores (10.10.10.0/24)"]
+        WEBAPP["target-webapp .10<br/>DVWA + agente Wazuh<br/>FIM /var/www/html"]
+        APPDB["target-app-db .11<br/>MySQL 8.0"]
+        WEBAPP --- APPDB
+    end
+
+    subgraph DMZ["VLAN 20 — DMZ (10.10.20.0/24)"]
+        NIDS["suricata .50<br/>NIDS, 5 firmas propias"]
+        MAIL["mailserver .20<br/>Postfix + Dovecot"]
+        HONEY["cowrie .30<br/>honeypot SSH/Telnet"]
+    end
+
+    subgraph USR["VLAN 30 — Usuarios (10.10.30.0/24)"]
+        SSHC["target-ssh-client .10<br/>OpenSSH 2222 + agente Wazuh<br/>contraseña débil a propósito"]
+    end
+
+    subgraph MGMT["VLAN 90 — Gestión (10.10.90.0/24)"]
+        MANAGER["wazuh.manager .10"]
+        INDEXER["wazuh.indexer .11"]
+        DASH["wazuh.dashboard .12"]
+        KC["keycloak .20"]
+        KCDB["identity-db .21"]
+        MANAGER --- INDEXER --- DASH
+        KC --- KCDB
+    end
+
+    ROUTER --- SRV
+    ROUTER --- DMZ
+    ROUTER --- USR
+    ROUTER --- MGMT
+
+    WEBAPP -.agente 1514/1515.-> MANAGER
+    SSHC -.agente 1514/1515.-> MANAGER
+    NIDS -.volumen eve.json.-> MANAGER
+    HONEY -.volumen cowrie.json.-> MANAGER
+    MANAGER -.SMTP 25.-> MAIL
+    MANAGER -.firewall-drop / isolate-webapp.-> SSHC
+    MANAGER -.firewall-drop / isolate-webapp.-> WEBAPP
+
+    classDef mgmt fill:#e8f0fe,stroke:#4285f4
+    classDef dmz fill:#fef7e0,stroke:#f9ab00
+    classDef srv fill:#e6f4ea,stroke:#34a853
+    classDef usr fill:#fce8e6,stroke:#ea4335
+    class MANAGER,INDEXER,DASH,KC,KCDB mgmt
+    class NIDS,MAIL,HONEY dmz
+    class WEBAPP,APPDB srv
+    class SSHC usr
 ```
 
-❌ = stack todavía no construido (no bloquea el freeze del 07/10, ver
-`../brain/notes/plan-recuperacion-atraso.md`).
+Todos los contenedores corren en `docker-host` (una NIC por VLAN, redes Docker
+**macvlan**). Las líneas punteadas son los flujos lógicos de la cadena de detección
+(agentes/sensores → manager), respuesta (manager → Active Response en el agente) y
+notificación (manager → mail). `docker-host` no puede hablar con sus propios
+contenedores (limitación de macvlan) — se accede desde el router o desde otra VM.
+
+`wazo` (telefonía) y `alerting` (2º canal) no se construyeron — recorte justificado,
+ver `brain/decisions.md` 2026-10-05.
 
 > Nota: el host SSH víctima (RT-02/CU-02) vive en VLAN Usuarios, no en VLAN Servidores
 > — simula un puesto comprometido, no el servidor de la app. Ver `infra/targets/docker-compose.yml`.
 
 ### 1.4 Copias de seguridad y puntos de monitoreo
 
-- Captura de tráfico: `nids` (Suricata) en la VLAN DMZ. Espejo del router hacia el NIDS:
-  pendiente de decisión.
-- Agente Wazuh en el host SSH víctima y en la app → `siem-hids` (puertos 1514/1515):
-  pendiente.
-- Logs de Suricata y Cowrie → Wazuh: pendiente (hoy el SIEM no los ve).
+- Captura de tráfico: `nids` (Suricata) en la VLAN DMZ, verificado (CU-01). Espejo del
+  router hacia el NIDS más allá de su propia IP: pendiente de decisión.
+- Agente Wazuh en el host SSH víctima y en la app (puertos 1514/1515): **verificado**
+  (CU-02 y CU-03, 14/10 — ver `brain/LEARNINGS.md`).
+- Logs de Suricata → Wazuh: verificado (CU-01). Logs de Cowrie → Wazuh: configurado,
+  sin verificar en el dashboard.
 - Backup de configuración de `siem-hids` e `identity` → pendiente de definir mecanismo
-  (RF-13/RNF-08), anotar en `../brain/decisions.md` cuando se resuelva.
+  (RF-13/RNF-08; `docs/06-plan-continuidad.md` §2).
+
+### 1.5 Cadena detección → respuesta → notificación (verificada de punta a punta)
+
+Los tres casos de uso construidos están verificados con evidencia real
+(`docs/evidencias/`), con los tiempos medidos el 14/10/2026.
+
+**CU-01 — Reconocimiento (sin contención automática por diseño):**
+
+```mermaid
+sequenceDiagram
+    participant Atacante
+    participant Suricata as suricata (DMZ)
+    participant Manager as wazuh.manager (Gestión)
+    participant Dashboard as wazuh.dashboard
+
+    Atacante->>Suricata: Ping sweep + escaneo SYN (nmap)
+    Suricata->>Suricata: SID 1000001/1000005 (umbral SYN/ICMP por origen)
+    Suricata->>Manager: eve.json (volumen compartido)
+    Manager->>Manager: regla 86601 -> regla local 100100 (nivel 10)
+    Manager->>Dashboard: alerta visible (Threat Hunting)
+    Note over Manager: Sin Active Response — es solo reconocimiento (RF-06 aplica a CU-02/03)
+```
+
+**CU-02 — Fuerza bruta SSH → bloqueo → mail** (MTTD ≈13s, MTTR ≈0s, +24s notificación):
+
+```mermaid
+sequenceDiagram
+    participant Atacante
+    participant SSHClient as target-ssh-client (Usuarios)
+    participant Manager as wazuh.manager (Gestión)
+    participant Mail as mailserver (DMZ)
+    participant SOC as soc@lab.local
+
+    Atacante->>SSHClient: 00:45:31 — logins SSH fallidos (usuario inexistente)
+    SSHClient->>SSHClient: agente Wazuh lee auth.log
+    SSHClient->>Manager: eventos vía 1514
+    Manager->>Manager: 00:45:44 — regla 5712 nivel 10 (Non existent user)
+    Manager->>SSHClient: Active Response firewall-drop
+    SSHClient->>SSHClient: iptables DROP sobre la IP atacante (600s)
+    Manager->>Mail: 00:45:48 — SMTP 25 (mynetworks incluye net_mgmt)
+    Mail->>SOC: 00:45:55 — mail entregado (regla 5712, nivel 10)
+```
+
+**CU-03 — Webshell → aislamiento → mail** (MTTD/MTTR ≈0s, +15s notificación):
+
+```mermaid
+sequenceDiagram
+    participant Atacante
+    participant WebApp as target-webapp (Servidores)
+    participant Manager as wazuh.manager (Gestión)
+    participant Mail as mailserver (DMZ)
+    participant SOC as soc@lab.local
+
+    Atacante->>WebApp: 01:08:34 — archivo .php agregado a /var/www/html
+    WebApp->>WebApp: FIM en tiempo real (syscheck) detecta el alta
+    WebApp->>Manager: evento vía 1514
+    Manager->>Manager: regla base 554 -> regla local 100200 nivel 12 (T1505.003)
+    Manager->>WebApp: Active Response isolate-webapp
+    WebApp->>WebApp: elimina ruta por defecto, conserva ruta a .10 (TCP 1514)
+    Manager->>Mail: SMTP 25
+    Mail->>SOC: 01:08:49 — mail entregado (regla 100200, nivel 12)
+```
+
+Detalle completo, con los JSON de alerta y los comandos de verificación, en
+`docs/evidencias/CU-01_INC-2026-001/`, `docs/evidencias/CU-02/` y
+`docs/evidencias/CU-03_INC-2026-003/`.
 
 ## 2. C4 — Nivel 1: Contexto
 
@@ -129,23 +238,27 @@ Los 5 casos de uso de `40-consigna-propia.md` §3, mapeados a vistas:
 
 | ID escenario | Descripción | Vistas que toca | Cómo se valida |
 |---|---|---|---|
-| ESC-01 (CU-01) | Reconocimiento/escaneo DMZ | Física, Procesos | Alerta Suricata visible en Wazuh |
-| ESC-02 (CU-02) | Fuerza bruta SSH | Física, Procesos | Playbook bloquea IP; verificar en FW |
-| ESC-03 (CU-03) | Webshell en la app | Física, Lógica, Procesos | FIM detecta archivo; host aislado |
-| ESC-04 (CU-04) | Credenciales robadas | Lógica (Keycloak), Procesos | MFA bloquea acceso; log de intento |
-| ESC-05 (CU-05) | Exfiltración por DNS | Física, Procesos | Correlación SIEM + alerta 2º canal |
+| ESC-01 (CU-01) | Reconocimiento/escaneo DMZ | Física, Procesos | ✅ Alerta Suricata visible en Wazuh (05/10) |
+| ESC-02 (CU-02) | Fuerza bruta SSH | Física, Procesos | ✅ Playbook bloquea IP + mail (14/10) |
+| ESC-03 (CU-03) | Webshell en la app | Física, Lógica, Procesos | ✅ FIM detecta archivo; host aislado + mail (14/10) |
+| ESC-04 (CU-04) | Credenciales robadas | Lógica (Keycloak), Procesos | ❌ Pendiente — TOTP validado en Keycloak, pero sin playbook ni integración con el SIEM |
+| ESC-05 (CU-05) | Exfiltración por DNS | Física, Procesos | ❌ Pendiente |
 
 ## 5. Pendiente
 
 - [x] ~~Router + 4 VLANs + docker-host~~ (automatizado en `vagrant/`).
 - [x] ~~Stacks identity, mail, honeypot, targets, nids, siem-hids~~ — construidos y probados.
-- [ ] Llevar logs de Suricata y Cowrie a Wazuh (sin esto ESC-01 no se ve en el SIEM).
-- [ ] Instalar agente Wazuh en `targets` (webapp/ssh-client) para HIDS/FIM real (RF-04),
-  con la regla del router Servidores/Usuarios → Gestión 1514/1515 (ya incluida en el
-  router nftables; en OPNsense, crearla).
-- [ ] Configurar MFA en Keycloak (RF-12).
+- [x] ~~Instalar agente Wazuh en `targets` (webapp/ssh-client) para HIDS/FIM real~~ —
+  verificado de punta a punta el 14/10 (ver §1.5 y `brain/LEARNINGS.md`).
+- [x] ~~Verificar CU-01/02/03 de punta a punta, incluida la notificación~~ — 14/10/2026.
+- [ ] Llevar logs de Cowrie a Wazuh y verificarlos en el dashboard (Suricata ya está).
+- [ ] Configurar MFA obligatorio en Keycloak más allá del usuario de demo (`admin-lab`,
+  TOTP ya validado) y en el dashboard de Wazuh (RF-12); WebAuthn bloqueado por falta de
+  HTTPS.
 - [ ] Resolver mirroring real de tráfico hacia `nids` (hoy ve solo tráfico de la DMZ).
-- [ ] Construir `wazo` y `alerting` (no bloquean el freeze del 07/10).
-- [ ] Reemplazar el diagrama en texto por imagen (draw.io/similar) en `docs/evidencias/`.
+- [ ] Construir `wazo` y `alerting`, o formalizar el recorte en `brain/decisions.md`
+  (RF-06 ya está cubierto por Wazuh Active Response).
+- [ ] CU-04 (credenciales robadas) y CU-05 (exfiltración DNS): sin implementar.
+- [ ] Prueba de restauración de backups (RF-13/RNF-08, `docs/06-plan-continuidad.md`).
 - [ ] Asignar el 3er playbook de Active Response (RF-06) a CU-04 o CU-05.
 - [ ] Aprobación del docente (RF-01), junto con `40-consigna-propia.md`.
