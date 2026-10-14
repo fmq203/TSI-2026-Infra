@@ -14,6 +14,7 @@ services:
       - "587:587"   # submission (usar este desde el SIEM/SOAR)
       - "993:993"   # IMAPS, para revisar alertas recibidas
     volumes:
+      - mail_vmail:/var/mail
       - mail_data:/var/mail-state
       - mail_config:/tmp/docker-mailserver
       # mynetworks ampliado a net_mgmt: PERMIT_DOCKER=network solo cubre la red propia
@@ -40,5 +41,6 @@ networks:
     external: true
 
 volumes:
+  mail_vmail:
   mail_data:
   mail_config:
