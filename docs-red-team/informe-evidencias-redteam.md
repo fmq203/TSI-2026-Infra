@@ -49,26 +49,54 @@ frágil hace que un fallo del SIEM tire abajo el servicio productivo (DVWA).
 
 ## CU-01 — Reconocimiento / escaneo de puertos
 
-- **Objetivo:** Suricata / DMZ (`10.10.20.50`)
-- **Posición del atacante:** _(a completar)_
+- **Objetivo:** red interna, app de préstamos (`10.10.10.10`) y NIDS/DMZ (`10.10.20.50`)
 - **Detección esperada (Blue Team):** firma Suricata → Wazuh, sin bloqueo automático.
 
-### Comandos ejecutados
+### Parte A — Reconocimiento desde la VLAN de Usuarios (2026-10-25)
+
+**Posición:** Kali en VLAN Usuarios (`10.10.30.100`), como puesto de usuario comprometido.
+
+#### Comandos ejecutados
+```bash
+sudo nmap -sn 10.10.30.0/24                    # descubrimiento del segmento Usuarios
+sudo nmap -sS -sV -p 1-1000 10.10.30.10        # SSH víctima
+sudo nmap -sS -sV -p 1-1000 10.10.10.10        # app de préstamos (Servidores)
+sudo nmap -sS -p 25,587,993,2222 10.10.20.50   # NIDS/DMZ (SYN)
+sudo nmap -sN -p 25,587,993 10.10.20.50        # NIDS/DMZ (NULL)
+sudo nmap -sF -p 25,587,993 10.10.20.50        # NIDS/DMZ (FIN)
+```
+
+#### Resultado
+- **Descubrimiento (Usuarios):** 4 hosts vivos — `10.10.30.5` (docker-host), `10.10.30.10`
+  (SSH víctima), `10.10.30.254` (gateway), `10.10.30.100` (atacante).
+- **SSH víctima (1-1000):** todos *closed* (el servicio SSH está en 2222, fuera del rango).
+- **App de préstamos `10.10.10.10` (1-1000):** **todos *filtered* (no-response)** → la
+  segmentación bloquea Usuarios→Servidores en ese rango.
+- **NIDS `10.10.20.50`:** SYN → *filtered*; NULL y FIN → *closed* (RST). Es decir, los
+  paquetes stateless (NULL/FIN) reciben RST mientras el SYN es descartado.
+
+#### Respuesta del Blue Team observada
+- **Suricata: 0 eventos** registrados desde `10.10.30.100` (`eve.json`). El RST de los
+  scans NULL/FIN lo genera el firewall/router al rechazar; **el tráfico nunca llega a la
+  DMZ**, así que Suricata no lo ve y **no se dispara ninguna alerta**.
+
+#### Hallazgo / conclusión
+- **H-01.1 (defensa efectiva):** la segmentación impide que un puesto de Usuarios haga
+  reconocimiento contra Servidores y la DMZ. El NIDS queda ciego a este escaneo porque
+  nunca lo alcanza.
+- **H-01.2 (observación de evasión):** el firewall responde distinto a SYN (drop) que a
+  NULL/FIN (reject con RST). No permite llegar a la DMZ, pero la diferencia de respuesta
+  permite a un atacante **inferir que hay un filtro con estado** delante.
+
+### Parte B — Reconocimiento desde "Internet" (VLAN WAN) — _pendiente_
+
+**Posición:** Kali en VLAN WAN (`203.0.113.100`), como atacante externo.
+Objetivo: escanear los puertos publicados de la DMZ para disparar las firmas de Suricata.
+
 ```bash
 _(a completar)_
 ```
-
-### Resultado
-_(a completar)_
-
-### Evidencia
 _(capturas en `evidencias/CU-01/`)_
-
-### Respuesta del Blue Team observada
-_(a completar)_
-
-### Hallazgo / conclusión
-_(a completar)_
 
 ---
 
