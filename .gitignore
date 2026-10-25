@@ -5,3 +5,6 @@ infra/*/ssl/
 # nunca van al repo público. Distribuir al Red Team por un canal privado.
 **/opnsense-config*.xml
 vagrant/*.xml
+
+# Estado local de Vagrant (ids de VM, llaves SSH generadas) — no va al repo
+vagrant/.vagrant/
