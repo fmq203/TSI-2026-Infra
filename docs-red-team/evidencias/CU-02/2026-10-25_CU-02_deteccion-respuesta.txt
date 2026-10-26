@@ -1,0 +1,35 @@
+Captura 25/10/2026 — CU-02, Pablo.
+Fuerza bruta SSH desde Kali (VLAN Usuarios, 10.10.30.100) contra
+labuser@10.10.30.10 puerto 2222. La defensa detectó, bloqueó y notificó.
+
+Las horas del dashboard de Wazuh están en hora local (UTC-3). El mail y el
+reloj del mailserver están en UTC (23:11 local = 02:11 UTC del 26/10).
+
+=== Línea de tiempo (hora local del dashboard) ===
+23:11:45.717  Primer login fallido (PAM, regla 5503; sshd regla 5760 a las .718)
+23:11:48.721  Alerta Wazuh, regla 5763, nivel 10
+             "sshd: brute force trying to get access to the system"     -> MTTD ~3 s
+23:11:51.726  Active Response, regla 651, "Host Blocked by firewall-drop" -> MTTR ~3 s
+23:12:04     Mail entregado en soc@lab.local (UTC 26/10 02:12:04)         -> +15 s
+             Asunto: Wazuh notification - (ssh-client) any - Alert level 10
+
+=== Bloqueo observado ===
+docker exec target-ssh-client iptables -L INPUT -n
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+DROP       0    --  10.10.30.100         0.0.0.0/0
+
+Desde Kali, un SSH nuevo quedó cortado por ese DROP:
+ssh -p 2222 -o ConnectTimeout=5 labuser@10.10.30.10
+ssh: connect to host 10.10.30.10 port 2222: Connection timed out
+
+=== Dónde está el mail ===
+Casilla soc@lab.local, Maildir del contenedor mailserver:
+/var/mail/lab.local/soc/new/1792980724.M361716P4003.mail
+No hay webmail. Para leerlo desde Windows hace falta el túnel SSH al puerto 993
+de 10.10.20.20 y un cliente IMAP. Usuario soc@lab.local; la contraseña es
+SOC_MAIL_PASSWORD en infra/mail/.env dentro de docker-host.
+
+=== Evidencia ===
+- script1-wazuh.png — Threat Hunting, agente ssh-client (002), reglas 5760/5763/651
+- script2-kali terminal.jpg — desde Kali, SSH a 10.10.30.10:2222 en connection timed out

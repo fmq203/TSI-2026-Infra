@@ -108,21 +108,38 @@ _(capturas en `evidencias/CU-01/`)_
   `firewall-drop` → mail al SOC.
 
 ### Comandos ejecutados
-```bash
-_(a completar)_
-```
+Pablo, 25/10/2026, desde Kali en VLAN Usuarios (`eth2` = `10.10.30.100`).
+Intentos SSH fallidos contra `labuser@10.10.30.10` puerto 2222.
 
 ### Resultado
-_(a completar)_
+Wazuh registró los fallos en el agente `ssh-client` (002). A los ~3 s disparó la
+regla **5763** (nivel 10, brute force). A los ~3 s siguientes, Active Response
+`firewall-drop` (regla **651**) dejó un `DROP` de `10.10.30.100` en el `iptables`
+del contenedor. Un SSH nuevo desde Kali quedó en *connection timed out*.
+
+El mail al SOC salió: `soc@lab.local`, 26/10 02:12:04 UTC (23:12:04 hora local),
+asunto "Wazuh notification - (ssh-client) any - Alert level 10". Unos 15 s
+después de la alerta de nivel 10.
 
 ### Evidencia
-_(capturas en `evidencias/CU-02/`)_
+- `evidencias/CU-02/script1-wazuh.png` — Threat Hunting con 5760, 5763 y 651.
+- `evidencias/CU-02/script2-kali terminal.jpg` — SSH desde Kali a `10.10.30.10:2222`,
+  *connection timed out*.
+- `evidencias/CU-02/2026-10-25_CU-02_deteccion-respuesta.txt` — línea de tiempo e
+  `iptables`.
 
 ### Respuesta del Blue Team observada
-_(a completar — medir MTTD/MTTR)_
+| Hito | Hora local (dashboard) | Delta |
+|---|---|---|
+| Primer fallo (5503 / 5760) | 23:11:45.717 | — |
+| Alerta 5763, nivel 10 | 23:11:48.721 | MTTD ~3 s |
+| `firewall-drop` (651) | 23:11:51.726 | MTTR ~3 s |
+| Mail en `soc@lab.local` | 23:12:04 | +15 s desde la alerta |
 
 ### Hallazgo / conclusión
-_(a completar)_
+El control de CU-02 funcionó de punta a punta: detección, bloqueo de la IP
+atacante y aviso por mail. No hubo evasión. La regla que cortó fue **5763**
+(usuario existente), no la 5712 (usuario inexistente).
 
 ---
 
