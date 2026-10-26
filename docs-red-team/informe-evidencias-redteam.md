@@ -233,6 +233,138 @@ _(a completar)_
 
 ---
 
+## CU-06 — Inspección estática del repositorio
+
+Sin tráfico contra el laboratorio. La Parte A revisa Dockerfiles y secretos
+con Trivy. La Parte B revisa shell, Dockerfiles, compose y secretos con Semgrep.
+
+### Parte A — Trivy 0.76.1 (2026-10-26)
+
+Herramienta de revisión de código e imágenes, sin tráfico contra el laboratorio.
+Comando: `trivy fs --scanners misconfig,secret`, salteando las carpetas de
+evidencias y los Excel. En esta versión los scanners de configuración son
+Dockerfile, Helm, Kubernetes, Terraform, Ansible y CloudFormation. Los
+`docker-compose.yml` no se evaluaron.
+
+El scanner de secretos no devolvió coincidencias.
+
+| Archivo | ID | Severidad | Qué marcó |
+|---|---|---|---|
+| `infra/targets/web-victim/Dockerfile` | DS-0001 | Media | Tag `:latest` en `vulnerables/web-dvwa` |
+| `infra/targets/web-victim/Dockerfile` | DS-0002 | Alta | `USER root` |
+| `infra/targets/ssh-victim/Dockerfile` | DS-0002 | Alta | Sin `USER`: la imagen corre como root |
+| `infra/targets/wazuh-agent/Dockerfile` | DS-0002 | Alta | Sin `USER`: la imagen corre como root |
+| `infra/targets/wazuh-agent/Dockerfile` | DS-0029 | Alta | `apt-get install` sin `--no-install-recommends` |
+| Los tres Dockerfiles | DS-0026 | Baja | Sin `HEALTHCHECK` |
+
+`infra/targets/wazuh-agent/` no lo usa el compose actual (el agente va dentro
+de `ssh-victim` y `web-victim`). El hallazgo queda en el árbol igual.
+
+### Hallazgo / conclusión
+- **H-EST-01:** las imágenes de los blancos se construyen como root. Un proceso
+  que salga del servicio dentro del contenedor hereda ese usuario.
+- **H-EST-02:** la app de préstamos parte de `vulnerables/web-dvwa:latest`. El
+  tag no queda fijo y la base es una aplicación vulnerable a propósito.
+- El scanner de secretos no aporta un hallazgo nuevo respecto de las claves de
+  laboratorio ya anotadas en CU-04.
+
+Evidencia: `evidencias/CU-06/trivy-fs.txt` y `evidencias/CU-06/trivy-fs.json`.
+
+### Parte B — Semgrep 1.182.1 (2026-10-26)
+
+El scanner de secretos no devolvió coincidencias. Las reglas de compose
+tampoco: cubren `privileged`, el socket de Docker, seccomp, SELinux,
+`no-new-privileges` y filesystem escribible, y el patrón pide la clave
+`version:`. Los compose de este repo arrancan en `services:` y declaran
+`cap_add`. Esa capacidad no entra en el conjunto, así que este pase no la
+evalúa.
+
+| Archivo | Regla | Severidad | Qué marcó |
+|---|---|---|---|
+| `infra/targets/web-victim/Dockerfile` | `last-user-is-root` | Error | El último `USER` es root (línea 3) |
+| `infra/targets/ssh-victim/Dockerfile` | `missing-user-entrypoint` | Error | `ENTRYPOINT` sin un `USER` distinto de root (línea 37) |
+| `infra/targets/wazuh-agent/Dockerfile` | `missing-user` | Error | `CMD` sin un `USER` distinto de root (línea 11) |
+| `infra/siem-hids/configure-manager.sh` | `unquoted-variable-expansion-in-command` | Info | 10 expansiones sin comillas (líneas 25, 35, 36, 82, 83, 95, 97, 98, 105, 106) |
+| `infra/targets/web-victim/isolate-webapp.sh` | `unquoted-variable-expansion-in-command` | Info | Líneas 16, 27 y 30 |
+
+Las expansiones sin comillas usan variables del mismo script con nombres e IP
+fijos, sin espacios. Con esos valores el corte de la línea no se produce.
+
+### Hallazgo / conclusión
+- Los tres ERROR de Dockerfile son el mismo punto que **H-EST-01** (Parte A,
+  Trivy DS-0002): las imágenes de los blancos quedan como root.
+- **H-EST-03:** `configure-manager.sh` e `isolate-webapp.sh` expanden variables
+  sin comillas. Severidad info de la regla; impacto bajo con los valores
+  actuales.
+- Secretos: nada nuevo respecto de las claves de laboratorio ya anotadas en
+  CU-04.
+
+Evidencia: `evidencias/CU-06/semgrep.txt` y `evidencias/CU-06/semgrep.json`.
+
+---
+
+## CU-07 — Avisos públicos de las tecnologías (2026-10-26)
+
+Contraste de la versión que declara el repo con avisos públicos. No hubo
+tráfico contra el laboratorio ni `docker pull`. Un tag móvil (`latest`,
+`16-alpine`, `8.0`) no alcanza para afirmar un CVE: el parche que bajaría
+hoy puede ser otro.
+
+### Versiones fijas
+
+| Producto | Versión en el repo | Aviso | Severidad | Qué implica |
+|---|---|---|---|---|
+| Wazuh manager | 4.9.0 | CVE-2025-24016 | Crítica (9.0) | Deserialización insegura. Quien tenga acceso a la API, o en ciertas configuraciones un agente comprometido, puede ejecutar código en el manager. Corregido en 4.9.1 |
+| Wazuh manager | 4.9.0 | GHSA-gj9h-8hmr-xjjr | Alta | Un usuario autenticado con el rol `users_admin` puede cambiar la contraseña de las cuentas de administrador reservadas. El aviso incluye 4.9.0; el arreglo de esa línea es 4.10.4 |
+| Wazuh dashboard | 4.9.0 | GHSA-648q-8m78-5cwv | Media (4.6) | Un usuario con pocos privilegios puede ver el listado de agentes. Corregido en 4.9.1. En este laboratorio el dashboard ya abre sin login (H-04.2) |
+| Keycloak | tag `26.0` | CVE-2026-18963 | Crítica (9.1) | Toma de cuenta sin autenticación por el flujo de recuperación de contraseña. La línea 26.0 no tiene parche (el arreglo está en 26.4.15, 26.6.6 o 26.7.2) |
+| Keycloak | tag `26.0` | CVE-2026-7507 | Alta (7.5) | Fijación de sesión en el login OIDC. Pide que la víctima abra un enlace y puede terminar en toma de cuenta. Corregido en 26.6.2 |
+| Keycloak | tag `26.0` | CVE-2026-4634 | Alta (7.5) | Denegación de servicio no autenticada en el endpoint OIDC de tokens. Corregido en 26.5.7 |
+
+El tag `quay.io/keycloak/keycloak:26.0` no fija el parche. Un índice público
+del 23/10/2026 lo resolvió a 26.0.8, que sigue dentro de esos tres rangos.
+26.0 ya no recibe parches.
+
+El aviso del manager pide acceso a la API. En este laboratorio esa clave está
+en el ejemplo y el dashboard no autentica (H-04.2).
+
+### Producto vulnerable a propósito
+
+**H-07.7 — DVWA.** `vulnerables/web-dvwa:latest` es la app de préstamos. El
+proyecto publica a propósito inyección SQL, XSS, subida de archivos, inyección
+de comandos y CSRF, según el nivel de seguridad. No es un CVE sobre una
+versión atrasada: es el blanco del ejercicio. CU-03 ya mostró la subida de un
+`.php` con el nivel low.
+
+### Revisado y no atribuible a este pin
+
+- CVE-2026-74041 (Wazuh, crítica) empieza en 4.14.3. 4.9.0 queda afuera.
+- GHSA-pmr2-2r83-h3cv es el agente de Windows y está corregido en 4.9.0. Los
+  agentes de este laboratorio son Linux.
+- CVE-2026-2603 (Keycloak) pide un proveedor SAML. Este compose no lo declara.
+- CVE-2025-34469 afecta a Cowrie anterior a 2.9.0. Al 26/10/2026 el tag
+  `latest` de Docker Hub coincide con 3.1. El compose no fija versión, así
+  que una imagen vieja en caché sí podría tenerlo. No se afirma sobre un pull
+  actual.
+- `jasonish/suricata:latest`, `mysql:8.0`, `postgres:16-alpine` y
+  `docker-mailserver:latest` no fijan el parche. Sin resolver la imagen no
+  se les asigna un CVE.
+
+### Hallazgo / conclusión
+
+- **H-07.1:** el manager Wazuh 4.9.0 está dentro de CVE-2025-24016.
+- **H-07.2:** la API de ese mismo manager está dentro de GHSA-gj9h-8hmr-xjjr.
+- **H-07.3:** el dashboard 4.9.0 está dentro de GHSA-648q-8m78-5cwv. El efecto
+  práctico ya lo cubre H-04.2.
+- **H-07.4:** Keycloak `26.0` está dentro de CVE-2026-18963.
+- **H-07.5:** el mismo tag está dentro de CVE-2026-7507.
+- **H-07.6:** el mismo tag está dentro de CVE-2026-4634.
+- **H-07.7:** la app de préstamos es DVWA, vulnerable por diseño.
+
+Evidencia: `evidencias/CU-07/2026-10-26_CU-07_avisos-publicos.txt`.
+
+---
+
 ## Resumen de hallazgos
 
 | ID | Hallazgo | Severidad | Estado |
@@ -240,4 +372,14 @@ _(a completar)_
 | H-00 | Detección caída tras redespliegue + acoplamiento DVWA↔agente (`set -e`) | Media | Documentado |
 | H-04.1 | Keycloak con credencial admin por defecto (`admin`/`changeme`) | Alta | Confirmado |
 | H-04.2 | Wazuh dashboard sin autenticación | Alta | Confirmado |
+| H-EST-01 | Dockerfiles de los blancos corren como root (Trivy DS-0002; Semgrep `last-user-is-root`, `missing-user`, `missing-user-entrypoint`) | Alta | Confirmado, estático |
+| H-EST-02 | Base de la app fijada en `vulnerables/web-dvwa:latest` (Trivy DS-0001) | Media | Confirmado, estático |
+| H-EST-03 | Expansiones sin comillas en `configure-manager.sh` e `isolate-webapp.sh` (Semgrep) | Baja | Confirmado, estático |
+| H-07.1 | Wazuh manager 4.9.0 dentro de CVE-2025-24016 | Crítica | Confirmado por versión |
+| H-07.2 | API del manager 4.9.0 dentro de GHSA-gj9h-8hmr-xjjr | Alta | Confirmado por versión |
+| H-07.3 | Dashboard 4.9.0 dentro de GHSA-648q-8m78-5cwv | Media | Confirmado por versión |
+| H-07.4 | Keycloak `26.0` dentro de CVE-2026-18963 | Crítica | Confirmado por versión |
+| H-07.5 | Keycloak `26.0` dentro de CVE-2026-7507 | Alta | Confirmado por versión |
+| H-07.6 | Keycloak `26.0` dentro de CVE-2026-4634 | Alta | Confirmado por versión |
+| H-07.7 | App de préstamos = DVWA, vulnerable a propósito | Alta | Por diseño |
 | ... | _(se agregan a medida que avanzan los casos)_ | | |

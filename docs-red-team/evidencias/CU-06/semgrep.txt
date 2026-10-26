@@ -1,0 +1,41 @@
+Semgrep 1.182.1 — CU-06 Parte B
+Fecha: 2026-10-26
+Alcance: infra/ y vagrant/ (38 archivos). Sin tráfico contra el laboratorio.
+Reglas locales (el cliente no pudo verificar el certificado de semgrep.dev):
+  bash, dockerfile/security, yaml/docker-compose/security, generic/secrets
+  del repositorio semgrep-rules. El pack p/bash del registro respondió 404.
+Comando: semgrep scan --metrics=off --disable-version-check --config <reglas locales> --json
+JSON: semgrep.json
+
+Resultado de secretos: sin coincidencias.
+Resultado de docker-compose: sin coincidencias. Ese conjunto mira privileged,
+el socket de Docker, seccomp, SELinux, no-new-privileges y filesystem escribible,
+y sus patrones piden la clave version:. Los compose del repo arrancan en
+services: y usan cap_add. Esa capacidad no entra en estas reglas.
+
+Hallazgos sobre el árbol tal cual (fin de línea CRLF):
+  ERROR  last-user-is-root
+         infra/targets/web-victim/Dockerfile:3
+         el último USER de la imagen es root
+  INFO   unquoted-variable-expansion-in-command
+         infra/siem-hids/configure-manager.sh
+         líneas 25, 35, 36, 82, 83, 95, 97, 98, 105 y 106
+         infra/targets/web-victim/isolate-webapp.sh
+         líneas 16, 27 y 30
+         expansión sin comillas. Los valores actuales son nombres e IP fijos,
+         sin espacios.
+
+Aviso de parseo: en los tres Dockerfiles Semgrep cortó los RUN continuados
+(CRLF). ssh-victim y wazuh-agent no llegaron a evaluarse en ese pase.
+
+Relectura de copias con fin de línea LF (el fuente del repo no se modificó).
+En esa relectura el parseo cerró sin errores y sumó:
+  ERROR  missing-user-entrypoint
+         infra/targets/ssh-victim/Dockerfile:37
+         ENTRYPOINT sin un USER distinto de root
+  ERROR  missing-user
+         infra/targets/wazuh-agent/Dockerfile:11
+         CMD sin un USER distinto de root
+  ERROR  last-user-is-root
+         infra/targets/web-victim/Dockerfile:3
+         el mismo que el pase original

@@ -1,0 +1,68 @@
+CU-07 — avisos públicos de las tecnologías del laboratorio
+Fecha: 2026-10-26
+Método: contraste de la versión declarada en el repo con avisos públicos.
+No se atacó el laboratorio y no se resolvieron imágenes con docker pull.
+
+Versiones leídas del repo
+  wazuh/wazuh-indexer, wazuh-manager, wazuh-dashboard: 4.9.0
+  wazuh-agent en ssh-victim: 4.9.0-1
+  quay.io/keycloak/keycloak: 26.0
+  postgres: 16-alpine
+  mysql: 8.0
+  docker-mailserver: latest
+  jasonish/suricata: latest
+  cowrie/cowrie: latest
+  vulnerables/web-dvwa: latest
+  debian: bookworm-slim y debian:12-slim
+
+Atribuibles a una versión fija
+  CVE-2025-24016 (GHSA-hcrc-79hj-m3qh)
+    Wazuh manager >= 4.4.0, corregido en >= 4.9.1. CVSS 9.0.
+    Deserialización insegura. Ejecución de código en el manager para quien
+    tenga acceso a la API, o en ciertas configuraciones desde un agente
+    comprometido.
+    https://github.com/wazuh/wazuh/security/advisories/GHSA-hcrc-79hj-m3qh
+  GHSA-gj9h-8hmr-xjjr
+    Wazuh manager >= 4.9.0 y < 4.10.4 (también 4.11.0 hasta antes de 4.14.6).
+    Corregido en 4.10.4. Alta.
+    Un usuario autenticado con el rol users_admin puede cambiar la contraseña
+    de las cuentas de administrador reservadas.
+    https://github.com/wazuh/wazuh/security/advisories/GHSA-gj9h-8hmr-xjjr
+  GHSA-648q-8m78-5cwv
+    Wazuh dashboard <= 4.9.0, corregido en >= 4.9.1. CVSS 4.6.
+    Un usuario con pocos privilegios puede ver el listado de agentes.
+    https://github.com/wazuh/wazuh/security/advisories/GHSA-648q-8m78-5cwv
+  CVE-2026-18963 (GHSA-4gv3-mc9p-5wqc)
+    Keycloak 26.0.0 hasta antes de 26.4.15. La línea 26.0 no tiene parche.
+    CVSS 9.1. Toma de cuenta sin autenticación por el flujo de recuperación
+    de contraseña.
+    El tag 26.0 no fija el parche. Un índice público del 23/10/2026 lo
+    resolvió a 26.0.8, que sigue dentro del rango.
+    https://github.com/advisories/GHSA-4gv3-mc9p-5wqc
+  CVE-2026-7507 (GHSA-hf67-5vvq-fm3r)
+    Keycloak < 26.6.2. CVSS 7.5. Fijación de sesión en el login OIDC. Pide
+    que la víctima abra un enlace. Puede terminar en toma de cuenta.
+    https://nvd.nist.gov/vuln/detail/CVE-2026-7507
+  CVE-2026-4634 (GHSA-h4wv-g838-66g3)
+    Keycloak < 26.5.7. CVSS 7.5. Denegación de servicio no autenticada en
+    el endpoint OIDC de tokens.
+    https://nvd.nist.gov/vuln/detail/CVE-2026-4634
+
+Producto vulnerable a propósito
+  DVWA (vulnerables/web-dvwa)
+    La imagen existe para tener fallas conocidas: inyección SQL, XSS, subida
+    de archivos, inyección de comandos y CSRF, según el nivel de seguridad.
+    https://github.com/digininja/DVWA
+
+Revisados y no atribuibles a este pin
+  CVE-2026-74041: Wazuh 4.14.3 hasta antes de 4.14.8. 4.9.0 queda afuera.
+  GHSA-pmr2-2r83-h3cv: agente Wazuh de Windows, corregido en 4.9.0. Los
+    agentes de este laboratorio son Linux.
+  CVE-2026-2603: Keycloak, login vía un IdP SAML deshabilitado. Este compose
+    no declara un IdP SAML.
+  CVE-2025-34469: Cowrie anterior a 2.9.0. Al 26/10/2026 el tag latest de
+    Docker Hub coincide con 3.1, posterior al arreglo. El compose no fija
+    versión: una imagen vieja en caché sí podría tenerlo.
+  jasonish/suricata:latest, mysql:8.0, postgres:16-alpine y
+    docker-mailserver:latest no fijan el parche. No se les atribuye un CVE
+    sin resolver la imagen.

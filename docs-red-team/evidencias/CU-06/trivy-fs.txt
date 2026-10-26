@@ -1,0 +1,26 @@
+Trivy 0.76.1 — inspección estática
+Fecha: 2026-10-26
+Comando: trivy fs --scanners misconfig,secret --skip-dirs docs/evidencias,docs-red-team/evidencias,docs/excel
+Alcance: repo TSI-2026-Infra
+Scanners de misconfig de esta versión: dockerfile, helm, kubernetes, terraform, ansible, cloudformation, azure-arm.
+docker-compose.yml no entra en ese conjunto (no se evaluó).
+
+Resultado del scanner de secretos: sin coincidencias.
+
+Misconfiguraciones en Dockerfiles:
+
+infra/targets/web-victim/Dockerfile
+  MEDIUM  DS-0001  tag :latest (línea 1, vulnerables/web-dvwa:latest)
+  HIGH    DS-0002  el proceso de la imagen queda como root (USER root, línea 3)
+  LOW     DS-0026  sin HEALTHCHECK
+
+infra/targets/ssh-victim/Dockerfile
+  HIGH    DS-0002  sin USER: la imagen corre como root
+  LOW     DS-0026  sin HEALTHCHECK
+
+infra/targets/wazuh-agent/Dockerfile
+  HIGH    DS-0002  sin USER: la imagen corre como root
+  HIGH    DS-0029  apt-get install sin --no-install-recommends (línea 3)
+  LOW     DS-0026  sin HEALTHCHECK
+
+JSON completo: trivy-fs.json
