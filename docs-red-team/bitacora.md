@@ -30,8 +30,8 @@
 
 - **Entorno:** levantado. Kali de Pablo con NAT + `vlan_wan` (`203.0.113.100`) +
   `vlan_usr` (`10.10.30.100`).
-- **Ataques:** CU-01 Parte A hecha (Andres); CU-02 hecho (Pablo, 25/10). Pendientes:
-  CU-01 Parte B (Andres), CU-03, CU-04 (ampliar), CU-05.
+- **Ataques:** CU-01 Parte A hecha (Andres); CU-02 y CU-03 hechos (Pablo, 25/10).
+  Pendientes: CU-01 Parte B (Andres), CU-04 (ampliar), CU-05.
 - **Documento de evidencias:** `informe-evidencias-redteam.md`.
 
 ---
@@ -113,3 +113,30 @@
 - **Evidencia:** `docs-red-team/evidencias/CU-02/script1-wazuh.png`,
   `script2-kali terminal.jpg` y
   `docs-red-team/evidencias/CU-02/2026-10-25_CU-02_deteccion-respuesta.txt`.
+
+### 2026-10-25 — Pablo
+
+- **Hecho:**
+  - **CU-03** desde Kali en VLAN Usuarios (`10.10.30.100`) contra DVWA
+    (`10.10.10.10`), Security Level low, usuario `admin`.
+  - File Upload aceptó `cu03-pablo.php` en
+    `/var/www/html/hackable/uploads/`.
+  - Wazuh, agente `webapp` (001), regla 100200 nivel 12 a las 23:45:21.
+    `isolate-webapp` en el mismo segundo: sin ruta por defecto, conservada
+    la ruta a `10.10.90.10`. El `curl` desde Kali quedó sin respuesta HTTP.
+  - Mail al SOC en `soc@lab.local` a las 23:45:35 hora local (02:45:35 UTC),
+    ~14 s después de la alerta de nivel 12.
+
+- **Incidencias (resueltas):**
+  - El primer `curl` a `10.10.10.10` no devolvía nada: Kali lo mandaba por la
+    ruta `10.10.0.0/16` de la placa WAN, y el firewall descarta WAN → Servidores.
+    Se agregó `10.10.10.0/24` vía `10.10.30.254` por `eth2`. La app escuchaba
+    en el puerto 80; el agente `webapp` ya estaba Active.
+
+- **Pendiente / próximo paso:**
+  1. **Andres — CU-01 Parte B:** el escaneo desde `vlan_wan` hacia la DMZ.
+  2. **CU-04** (ampliar) y **CU-05**.
+
+- **Evidencia:** `docs-red-team/evidencias/CU-03/01_file upload.jpg`,
+  `02_Wazuh evidencia rule 100200.png`, `03_kali terminal curl.jpg` y
+  `2026-10-25_CU-03_deteccion-respuesta.txt`.

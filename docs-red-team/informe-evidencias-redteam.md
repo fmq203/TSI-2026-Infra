@@ -146,26 +146,45 @@ atacante y aviso por mail. No hubo evasión. La regla que cortó fue **5763**
 ## CU-03 — Webshell / inyección en la app de préstamos
 
 - **Objetivo:** DVWA (`10.10.10.10`)
-- **Posición del atacante:** _(a completar)_
+- **Posición del atacante:** VM Kali en VLAN Usuarios (`eth2` = `10.10.30.100`), con ruta
+  `10.10.10.0/24` vía `10.10.30.254`
 - **Detección esperada (Blue Team):** FIM Wazuh sobre `/var/www/html` → Active Response
   `isolate-webapp` → mail al SOC.
 
 ### Comandos ejecutados
-```bash
-_(a completar)_
-```
+Pablo, 25/10/2026, desde Kali. DVWA con usuario `admin` y Security Level **low**.
+Se subió `cu03-pablo.php` por File Upload. DVWA lo dejó en
+`/var/www/html/hackable/uploads/cu03-pablo.php`.
 
 ### Resultado
-_(a completar)_
+Wazuh lo registró en el agente `webapp` (001) con la regla **100200**, nivel 12,
+a las 23:45:21. En el mismo segundo corrió `isolate-webapp`: el contenedor perdió
+la ruta por defecto y conservó solo la red `10.10.10.0/24` y la ruta a
+`10.10.90.10`. Un `curl` desde Kali a `http://10.10.10.10/` quedó sin respuesta HTTP.
+
+El mail al SOC salió: `soc@lab.local`, 26/10 02:45:35 UTC (23:45:35 hora local),
+asunto "Wazuh notification - (webapp) any - Alert level 12". Unos 14 s después
+de la alerta.
 
 ### Evidencia
-_(capturas en `evidencias/CU-03/`)_
+- `evidencias/CU-03/01_file upload.jpg` — DVWA confirma la subida de `cu03-pablo.php`.
+- `evidencias/CU-03/02_Wazuh evidencia rule 100200.png` — Threat Hunting, regla 100200
+  nivel 12, agente `webapp`.
+- `evidencias/CU-03/03_kali terminal curl.jpg` — `curl` desde Kali sin encabezado HTTP.
+- `evidencias/CU-03/2026-10-25_CU-03_deteccion-respuesta.txt` — línea de tiempo,
+  rutas del contenedor y el mail.
 
 ### Respuesta del Blue Team observada
-_(a completar)_
+| Hito | Hora local | Delta |
+|---|---|---|
+| Alerta 100200, nivel 12 | 23:45:21.056 | MTTD en el mismo segundo |
+| `isolate-webapp` | 23:45:21 | MTTR ~0 s |
+| Mail en `soc@lab.local` | 23:45:35 | +14 s desde la alerta |
 
 ### Hallazgo / conclusión
-_(a completar)_
+El control de CU-03 funcionó de punta a punta: el archivo `.php` nuevo en el webroot
+disparó el FIM, el contenedor quedó aislado con el canal a Wazuh intacto, y el SOC
+recibió el mail. No hubo evasión.
 
 ---
 

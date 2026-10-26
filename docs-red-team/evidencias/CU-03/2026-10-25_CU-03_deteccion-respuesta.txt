@@ -1,0 +1,35 @@
+Captura 25/10/2026 — CU-03, Pablo.
+Subida de cu03-pablo.php a DVWA (10.10.10.10) desde Kali (VLAN Usuarios,
+10.10.30.100), con DVWA Security en low y usuario admin. La defensa lo vio
+por FIM, aisló el contenedor y avisó por mail.
+
+Las horas del dashboard de Wazuh están en hora local (UTC-3). El log de
+Active Response y el mail están en UTC (23:45 local = 02:45 UTC del 26/10).
+
+Antes de la prueba, 10.10.10.10 salía por la ruta 10.10.0.0/16 de la placa
+WAN y el curl no devolvía nada. Se agregó 10.10.10.0/24 vía 10.10.30.254
+(eth2) para que el tráfico fuera por Usuarios, que es de donde el firewall
+deja pasar el puerto 80.
+
+=== Línea de tiempo (hora local del dashboard) ===
+23:45:21.056  Alerta Wazuh, regla 100200, nivel 12, agente webapp (001)
+             "CU-03 Webshell: archivo PHP agregado al webroot:
+              /var/www/html/hackable/uploads/cu03-pablo.php"
+             MITRE T1505.003                                         -> MTTD mismo segundo
+23:45:21     Active Response isolate-webapp (UTC 26/10 02:45:21)
+             "Webapp isolated, Wazuh access preserved"               -> MTTR ~0 s
+23:45:35     Mail entregado en soc@lab.local (UTC 26/10 02:45:35)    -> +14 s
+             Asunto: Wazuh notification - (webapp) any - Alert level 12
+
+=== Aislamiento observado ===
+En el contenedor target-webapp quedó sin ruta por defecto. Solo:
+10.10.10.0/24 dev eth0 src 10.10.10.10
+10.10.90.10 via 10.10.10.254 dev eth0
+
+Desde Kali, el mismo curl de antes no devolvió encabezado HTTP:
+curl -sI --max-time 5 http://10.10.10.10/ | head -n 5
+
+=== Evidencia ===
+- 01_file upload.jpg — DVWA, "../../hackable/uploads/cu03-pablo.php succesfully uploaded!"
+- 02_Wazuh evidencia rule 100200.png — Threat Hunting, 1 hit, regla 100200 nivel 12
+- 03_kali terminal curl.jpg — curl desde Kali a 10.10.10.10 sin respuesta HTTP
