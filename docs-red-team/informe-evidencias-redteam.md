@@ -386,11 +386,11 @@ En Threat Hunting, filtro `rule.id: 100110`, desde el 27/10 23:54 hasta el momen
 
 La regla `100110` (nivel 8) solo coincide con `cowrie.login.failed`. Este intento fue un ingreso aceptado, así que no entra en esa regla. El mail al SOC está configurado para nivel 10 o más: aunque un fallo disparara la 100110, no saldría correo.
 
-Las capturas quedaron en `evidencias/CU-04/`.
+Las capturas están en `evidencias/RT-04/`.
 
 ### Evidencia
-- `evidencias/CU-04/01_ssh connect.jpg` — sesión SSH aceptada y `exit`.
-- `evidencias/CU-04/02_Threat Hunting.png` — regla 100110 sin resultados.
+- `evidencias/RT-04/01_ssh connect.jpg` — sesión SSH aceptada y `exit`.
+- `evidencias/RT-04/02_Threat Hunting.png` — regla 100110 sin resultados.
 - `evidencias/RT-04/2026-10-28_RT-04_cowrie-sin-alerta.txt`
 
 ### Hallazgo / conclusión

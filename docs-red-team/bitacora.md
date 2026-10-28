@@ -368,7 +368,7 @@
   2. **CU-04:** Events de Keycloak.
   3. **CU-05** (RT-05) y **RT-07**.
 
-- **Evidencia:** `docs-red-team/evidencias/CU-04/01_ssh connect.jpg`,
+- **Evidencia:** `docs-red-team/evidencias/RT-04/01_ssh connect.jpg`,
   `02_Threat Hunting.png` y
   `docs-red-team/evidencias/RT-04/2026-10-28_RT-04_cowrie-sin-alerta.txt`.
   El detalle formal está en `informe-evidencias-redteam.md`, RT-04.

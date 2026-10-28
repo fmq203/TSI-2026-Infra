@@ -12,4 +12,4 @@ La regla 100110 (nivel 8) solo coincide con cowrie.login.failed.
 Este ingreso fue aceptado, así que no entra. El mail al SOC es para
 nivel 10 o más.
 
-Capturas en evidencias/CU-04/ (01_ssh connect.jpg y 02_Threat Hunting.png).
+Capturas en evidencias/RT-04/ (01_ssh connect.jpg y 02_Threat Hunting.png).
