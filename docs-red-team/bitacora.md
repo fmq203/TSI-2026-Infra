@@ -31,9 +31,9 @@
 - **Entorno:** levantado. Kali de Pablo con NAT + `vlan_wan` (`203.0.113.100`) +
   `vlan_usr` (`10.10.30.100`).
 - **Ataques:** CU-01 Parte A y B hechas (Andres, 25 y 28/10); CU-02 y CU-03 hechos
-  (Pablo, 25/10); RT-04, RT-05 y RT-07 cerrados (Pablo, 28/10); RT-08, RT-09, RT-10 y
-  RT-11 cerrados (Pablo, 27/10); RT-12 cerrado (Pablo, 28/10).
-  Pendientes: CU-04 (Events de Keycloak), CU-05, RT-06.
+  (Pablo, 25/10); CU-04 cerrado (Andres, 28/10); RT-04, RT-05 y RT-07 cerrados (Pablo,
+  28/10); RT-08, RT-09, RT-10 y RT-11 cerrados (Pablo, 27/10); RT-12 cerrado (Pablo, 28/10).
+  Pendientes: RT-06. (CU-05 cubierto por RT-05.)
 - **Estático (CU-06):** Parte A, Trivy 0.76.1 sobre Dockerfiles y secretos.
   Parte B, Semgrep 1.182.1 sobre shell, Dockerfiles, compose y secretos (26/10).
   Evidencia en `docs-red-team/evidencias/CU-06/`.
@@ -458,3 +458,25 @@
 - **Evidencia:** `docs-red-team/evidencias/CU-01/script-5.png` (sin `-Pn`) y
   `script-6.png` (con `-Pn`). El detalle formal está en
   `informe-evidencias-redteam.md`, CU-01 Parte B.
+
+### 2026-10-28 — Andres
+
+- **Hecho:**
+  - **CU-04** cerrado (credenciales por defecto / robadas en identidad).
+  - Confirmado por consulta directa a la base de Keycloak (`identity-db`, Postgres):
+    el realm `master` tiene `events_enabled = f` y `admin_events_enabled = f`, y hay
+    **0 eventos** en `event_entity` y `admin_event_entity`.
+  - En la consola, **Events → User events** aparece vacío ("No user events").
+  - Conclusión: el login con `admin`/`changeme` **no deja rastro** (sin auditoría), no
+    hay MFA (el realm `lab` no existe), y Keycloak no reenvía logs a Wazuh → el SOC no
+    lo ve. Nuevo hallazgo **H-04.3** (Keycloak sin auditoría).
+
+- **Incidencias:** ninguna.
+
+- **Pendiente / próximo paso:**
+  1. **RT-06:** único objetivo que queda sin ejecutar.
+  2. Preliminar del `informe-red-team.md` ya lo dejó Pablo; falta CVSS, DOCX y la copia
+     en `docs/informe-red-team.md` para la entrega final (09/11).
+
+- **Evidencia:** `docs-red-team/evidencias/CU-04/events-keycloak.png`. El detalle formal
+  está en `informe-evidencias-redteam.md`, CU-04.

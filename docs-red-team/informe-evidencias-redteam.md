@@ -242,14 +242,32 @@ recibió el mail. No hubo evasión.
   seguridad de OpenSearch desactivado). Cualquiera con acceso de red a Gestión ve todas
   las alertas y la configuración del SIEM. Evidencia: `evidencias/CU-04/`.
 
-### Respuesta del Blue Team observada
-_(a completar — revisar si quedó registro en Events de Keycloak)_
+### Respuesta del Blue Team observada (2026-10-28)
+Consulta directa a la base de Keycloak (Postgres `identity-db`) y a la consola:
+
+```sql
+SELECT name, events_enabled, admin_events_enabled FROM realm;
+-- master | f | f
+SELECT count(*) FROM event_entity;        -- 0  (eventos de usuario/login)
+SELECT count(*) FROM admin_event_entity;  -- 0  (eventos de administración)
+```
+
+- **Registro de eventos DESACTIVADO** en el realm `master` (`events_enabled = f`,
+  `admin_events_enabled = f`) y **cero eventos** almacenados.
+- En la consola, **Events → User events** muestra "No user events — There are no user
+  events in this realm" (captura `evidencias/CU-04/events-keycloak.png`).
+- El login con la credencial por defecto **no dejó rastro**: ni evento de login ni evento
+  de administración. Keycloak tampoco reenvía logs a Wazuh, así que el SOC no lo ve.
 
 ### Hallazgo / conclusión
-El contraste con el TOTP del realm `lab` se hizo el 27/10 en el RT-09: en
-este despliegue ese realm no existe. La consola que sí abre es la de
-`master`, sin segundo factor (H-04.1). El registro en Events de Keycloak
-sigue sin revisar.
+- **H-04.3 — Keycloak sin auditoría:** el IdP no registra eventos de login ni de
+  administración (ambos deshabilitados, 0 filas). Un atacante con credenciales
+  robadas/por defecto opera **sin dejar huella** y sin notificación al SOC.
+- Contraste de MFA: el realm `lab` con TOTP que documentó el Blue Team **no existe** en
+  este despliegue (RT-09, 27/10). La única consola que abre es `master`, con credencial
+  por defecto y **sin segundo factor** (H-04.1).
+- CU-04 queda **cerrado**: acceso con credencial por defecto (H-04.1) + consola SIEM sin
+  login (H-04.2) + IdP sin MFA ni auditoría (H-04.3). Severidad alta.
 
 ---
 
@@ -657,6 +675,7 @@ El `Makefile` de `infra/` copia cada `.env.example` a `.env` cuando ese archivo 
 | H-01.3 | Recon externo (NULL/FIN) a la DMZ detectado por Suricata (SID 1000002/1000003) → Wazuh regla 100100 nivel 10 | Informativa (defensa) | Confirmado 28/10 |
 | H-04.1 | Keycloak con credencial admin por defecto (`admin`/`changeme`) | Alta | Confirmado |
 | H-04.2 | Wazuh dashboard sin autenticación | Alta | Confirmado |
+| H-04.3 | Keycloak sin auditoría: eventos de login y admin deshabilitados (0 registros); acceso con credencial por defecto no deja rastro | Alta | Cerrado 28/10 |
 | H-R04.1 | Cowrie acepta el SSH y la regla 100110 (solo login fallido) no alerta | Media | Cerrado 28/10 |
 | H-05.1 | No hay correlación de exfiltración por DNS (CU-05 / RT-05) | Media | Cerrado 28/10 |
 | H-R07.1 | Reglas locales públicas y de coincidencia estrecha: un login aceptado en Cowrie no alerta | Media | Cerrado 28/10 |
