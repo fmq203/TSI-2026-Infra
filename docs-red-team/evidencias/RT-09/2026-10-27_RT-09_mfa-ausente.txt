@@ -1,0 +1,28 @@
+Captura 27/10/2026 — RT-09, Pablo.
+Objetivo de la letra: saltear el MFA administrativo.
+Posición: navegador de Windows, túnel SSH a Keycloak (localhost:8080)
+y al dashboard de Wazuh (localhost:5601). No se usó Kali.
+
+El Blue Team documentó TOTP en el realm lab, usuario admin-lab.
+En este despliegue ese realm no existe. La consola de administración
+entra por master, usuario admin, sin segundo factor.
+
+=== Qué se vio ===
+http://localhost:8080/realms/lab/account/
+Keycloak: "We are sorry... Page not found"
+
+Consola de administración, sesión de admin. El selector de realms
+solo lista master. Realm roles de master: admin, create-realm,
+default-roles-master, offline_access, uma_authorization.
+
+Consulta a la base (identity-db, tabla realm): una sola fila, master.
+
+http://localhost:5601 abre la home de OpenSearch Dashboards
+sin formulario de login.
+
+=== Conclusión ===
+No hubo un segundo factor que saltear. El MFA administrativo no está
+aplicado en este despliegue: el realm con TOTP no existe, la consola
+master pide solo contraseña y el SIEM no pide usuario.
+El dashboard sin login ya estaba como H-04.2. La credencial admin
+por defecto, como H-04.1.

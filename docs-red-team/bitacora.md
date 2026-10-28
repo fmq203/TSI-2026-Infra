@@ -31,8 +31,8 @@
 - **Entorno:** levantado. Kali de Pablo con NAT + `vlan_wan` (`203.0.113.100`) +
   `vlan_usr` (`10.10.30.100`).
 - **Ataques:** CU-01 Parte A hecha (Andres); CU-02 y CU-03 hechos (Pablo, 25/10);
-  RT-08 cerrado (Pablo, 27/10): Wazo no está desplegado.
-  Pendientes: CU-01 Parte B (Andres), CU-04 (ampliar), CU-05.
+  RT-08 y RT-09 cerrados (Pablo, 27/10).
+  Pendientes: CU-01 Parte B (Andres), CU-04 (Events de Keycloak), CU-05.
 - **Estático (CU-06):** Parte A, Trivy 0.76.1 sobre Dockerfiles y secretos.
   Parte B, Semgrep 1.182.1 sobre shell, Dockerfiles, compose y secretos (26/10).
   Evidencia en `docs-red-team/evidencias/CU-06/`.
@@ -254,3 +254,29 @@
 
 - **Evidencia:** `docs-red-team/evidencias/RT-08/2026-10-27_RT-08_wazo-ausente.txt`.
   El detalle formal está en `informe-evidencias-redteam.md`, RT-08.
+
+### 2026-10-27 — Pablo
+
+- **Hecho:**
+  - **RT-09** desde el navegador de Windows, por el túnel a Keycloak
+    (`localhost:8080`) y al dashboard (`localhost:5601`). Sin Kali.
+  - `http://localhost:8080/realms/lab/account/` respondió «Page not found».
+    El realm `lab`, donde el Blue Team documentó el TOTP de `admin-lab`,
+    no está en esta copia. La base de Keycloak solo tiene el realm `master`.
+  - La consola de administración quedó abierta como `admin`, con el selector
+    de realms mostrando únicamente `master`, sin pedido de código.
+  - `localhost:5601` abrió la home de OpenSearch Dashboards sin login
+    (el mismo hueco que H-04.2).
+
+- **Incidencias:** ninguna. El `docker-compose` de `infra/identity/` no
+  importa el realm `lab`; por eso un `vagrant up` nuevo no lo trae.
+
+- **Pendiente / próximo paso:**
+  1. **Andres — CU-01 Parte B.**
+  2. **CU-04:** queda ver si Keycloak registró el login en Events.
+  3. **CU-05** y el resto de la 7.2 (RT-10 a RT-12, RT-04 a RT-07).
+
+- **Evidencia:** `docs-red-team/evidencias/RT-09/01_lab account - not found.jpg`,
+  `02_lista de realms.jpg`, `03_Wazuh sin login.png` y
+  `2026-10-27_RT-09_mfa-ausente.txt`.
+  El detalle formal está en `informe-evidencias-redteam.md`, RT-09.

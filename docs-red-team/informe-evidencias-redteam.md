@@ -206,7 +206,10 @@ recibió el mail. No hubo evasión.
 _(a completar — revisar si quedó registro en Events de Keycloak)_
 
 ### Hallazgo / conclusión
-_(a completar — contrastar con el MFA/TOTP del realm `lab`, que sí bloquea)_
+El contraste con el TOTP del realm `lab` se hizo el 27/10 en el RT-09: en
+este despliegue ese realm no existe. La consola que sí abre es la de
+`master`, sin segundo factor (H-04.1). El registro en Events de Keycloak
+sigue sin revisar.
 
 ---
 
@@ -393,6 +396,42 @@ contenido. Severidad informativa: no hay servicio que comprometer.
 
 ---
 
+## RT-09 — MFA administrativo
+
+- **Objetivo de la letra (7.2):** saltear el MFA de la administración.
+- **Posición del atacante:** navegador de Windows por túnel SSH. No se usó Kali.
+- **Resultado:** no hay un segundo factor que saltear en este despliegue.
+
+Pablo, 27/10/2026. El Blue Team documentó TOTP en el realm `lab`, usuario
+`admin-lab`. En esta copia el realm no está importado: el `docker-compose`
+de `infra/identity/` no lo carga, y la base de Keycloak tiene una sola fila
+en `realm`, `master`.
+
+`http://localhost:8080/realms/lab/account/` responde «We are sorry… Page not
+found». La consola de administración, abierta con la sesión de `admin`,
+muestra en el selector únicamente `master`. No pidió código de autenticador.
+Los roles de esa pantalla son los de `master` (`admin`, `create-realm`,
+`default-roles-master`, `offline_access`, `uma_authorization`).
+
+`http://localhost:5601` abre la home de OpenSearch Dashboards sin formulario
+de login. Es el mismo hueco que H-04.2. La cuenta `admin` de `master` es
+H-04.1.
+
+### Evidencia
+- `evidencias/RT-09/01_lab account - not found.jpg` — cuenta del realm `lab`, página inexistente.
+- `evidencias/RT-09/02_lista de realms.jpg` — selector con solo `master`, sesión `admin`.
+- `evidencias/RT-09/03_Wazuh sin login.png` — home del dashboard sin login.
+- `evidencias/RT-09/2026-10-27_RT-09_mfa-ausente.txt`
+
+### Hallazgo / conclusión
+**H-09.1 — MFA administrativo ausente en este despliegue.** El único lugar
+donde estaba documentado el TOTP no existe acá. La consola de identidades
+entra solo con contraseña y la consola del SIEM no pide usuario. RT-09 queda
+cerrado: el control no se saltea porque no está aplicado. Severidad alta,
+junto con H-04.1 y H-04.2.
+
+---
+
 ## Resumen de hallazgos
 
 | ID | Hallazgo | Severidad | Estado |
@@ -411,4 +450,5 @@ contenido. Severidad informativa: no hay servicio que comprometer.
 | H-07.6 | Keycloak `26.0` dentro de CVE-2026-4634 | Alta | Confirmado por versión |
 | H-07.7 | App de préstamos = DVWA, vulnerable a propósito | Alta | Por diseño |
 | H-08.1 | Wazo no desplegado; RT-08 no ejecutable | Informativa | Cerrado 27/10 |
+| H-09.1 | MFA administrativo ausente: no existe el realm `lab` y las consolas no piden segundo factor | Alta | Cerrado 27/10 |
 | ... | _(se agregan a medida que avanzan los casos)_ | | |
