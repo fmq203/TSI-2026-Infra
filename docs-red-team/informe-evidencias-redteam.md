@@ -88,15 +88,55 @@ sudo nmap -sF -p 25,587,993 10.10.20.50        # NIDS/DMZ (FIN)
   NULL/FIN (reject con RST). No permite llegar a la DMZ, pero la diferencia de respuesta
   permite a un atacante **inferir que hay un filtro con estado** delante.
 
-### Parte B — Reconocimiento desde "Internet" (VLAN WAN) — _pendiente_
+### Parte B — Reconocimiento desde "Internet" (VLAN WAN) (2026-10-28)
 
-**Posición:** Kali en VLAN WAN (`203.0.113.100`), como atacante externo.
+**Posición:** Kali en VLAN WAN (`203.0.113.100`, 3ª placa `eth2`), como atacante externo.
 Objetivo: escanear los puertos publicados de la DMZ para disparar las firmas de Suricata.
 
+#### Comandos ejecutados
 ```bash
-_(a completar)_
+# Ruta: forzar que el tráfico a la DMZ salga por la WAN (ingresa como atacante externo)
+sudo ip route add 10.10.20.0/24 via 203.0.113.254 dev eth2
+
+# -Pn obligatorio: el firewall filtra el ICMP WAN→DMZ, así que nmap cree "host down"
+sudo nmap -Pn -sN -p 25,587,993 10.10.20.50    # NULL
+sudo nmap -Pn -sF -p 25,587,993 10.10.20.50    # FIN
+sudo nmap -Pn -sS -p 25,587,993 10.10.20.50    # SYN
+sudo nmap -Pn -sS -p 2222,2223 10.10.20.30     # honeypot Cowrie
 ```
-_(capturas en `evidencias/CU-01/`)_
+
+#### Resultado
+- **Suricata (`10.10.20.50`):** NULL/FIN/SYN → todos *closed* (RST). A diferencia de la
+  Parte A (desde Usuarios), desde la WAN el tráfico **sí alcanza el sensor**: la posición
+  externa está permitida contra los puertos publicados de la DMZ.
+- **Honeypot (`10.10.20.30`):** `2222/tcp open` (Cowrie), `2223/tcp closed`.
+- Primer intento sin `-Pn`: nmap abortó ("host seems down") porque el firewall filtra el
+  ICMP de descubrimiento desde internet.
+
+#### Respuesta del Blue Team observada
+- **Suricata:** 15 eventos / **6 alertas** desde `203.0.113.100`:
+  - SID **1000002** — "CU-01 Escaneo NULL detectado (nmap -sN)" (puertos 25/587/993).
+  - SID **1000003** — "CU-01 Escaneo FIN detectado (nmap -sF)" (puertos 25/587/993).
+- **Wazuh:** las 6 correlacionaron en la regla **100100, nivel 10** (sin bloqueo
+  automático, es detección). Cadena completa: nmap → Suricata → Wazuh.
+- El SYN scan no gatilló firma propia (la de SYN exige 20 SYN en 10 s; se escanearon 3
+  puertos). El escaneo al honeypot `.30` no lo ve Suricata (solo observa tráfico a su
+  propia IP `.50`); queda del lado de Cowrie.
+
+#### Evidencia
+`evidencias/CU-01/script-5.png` (intento sin `-Pn`), `script-6.png` (escaneos con `-Pn`).
+
+#### Hallazgo / conclusión
+- **H-01.3 (detección efectiva desde el exterior):** el reconocimiento stateless
+  (NULL/FIN) de un atacante de internet contra la DMZ es detectado por Suricata y
+  correlacionado por Wazuh (nivel 10). La cadena de detección de CU-01 funciona para la
+  posición que el diseño espera (atacante externo), al contrario de la Parte A (interno),
+  donde la segmentación corta el tráfico antes de llegar al sensor.
+- **Nota de entorno:** al reencender el laboratorio, el servicio `macvlan-promisc.service`
+  había quedado en `failed` (el `ExecStart` perdía la variable del loop), dejando los
+  contenedores inalcanzables entre VLANs. Se reescribió con líneas `ExecStart` explícitas
+  por interfaz y quedó `active` y persistente. Es la misma piedra del modo promiscuo ya
+  vista antes.
 
 ---
 
@@ -612,6 +652,9 @@ El `Makefile` de `infra/` copia cada `.env.example` a `.env` cuando ese archivo 
 | ID | Hallazgo | Severidad | Estado |
 |---|---|---|---|
 | H-00 | Detección caída tras redespliegue + acoplamiento DVWA↔agente (`set -e`) | Media | Documentado |
+| H-01.1 | Segmentación bloquea el recon Usuarios→DMZ/Servidores (Suricata ciego a ese escaneo) | Informativa (defensa) | Confirmado 25/10 |
+| H-01.2 | El firewall responde distinto a SYN (drop) vs NULL/FIN (reject) → revela filtro con estado | Baja | Confirmado 25/10 |
+| H-01.3 | Recon externo (NULL/FIN) a la DMZ detectado por Suricata (SID 1000002/1000003) → Wazuh regla 100100 nivel 10 | Informativa (defensa) | Confirmado 28/10 |
 | H-04.1 | Keycloak con credencial admin por defecto (`admin`/`changeme`) | Alta | Confirmado |
 | H-04.2 | Wazuh dashboard sin autenticación | Alta | Confirmado |
 | H-R04.1 | Cowrie acepta el SSH y la regla 100110 (solo login fallido) no alerta | Media | Cerrado 28/10 |

@@ -30,9 +30,10 @@
 
 - **Entorno:** levantado. Kali de Pablo con NAT + `vlan_wan` (`203.0.113.100`) +
   `vlan_usr` (`10.10.30.100`).
-- **Ataques:** CU-01 Parte A hecha (Andres); CU-02 y CU-03 hechos (Pablo, 25/10);
-  RT-04, RT-05 y RT-07 cerrados (Pablo, 28/10); RT-08, RT-09, RT-10 y RT-11 cerrados (Pablo, 27/10); RT-12 cerrado (Pablo, 28/10).
-  Pendientes: CU-01 Parte B (Andres), CU-04 (Events de Keycloak).
+- **Ataques:** CU-01 Parte A y B hechas (Andres, 25 y 28/10); CU-02 y CU-03 hechos
+  (Pablo, 25/10); RT-04, RT-05 y RT-07 cerrados (Pablo, 28/10); RT-08, RT-09, RT-10 y
+  RT-11 cerrados (Pablo, 27/10); RT-12 cerrado (Pablo, 28/10).
+  Pendientes: CU-04 (Events de Keycloak), CU-05, RT-06.
 - **Estático (CU-06):** Parte A, Trivy 0.76.1 sobre Dockerfiles y secretos.
   Parte B, Semgrep 1.182.1 sobre shell, Dockerfiles, compose y secretos (26/10).
   Evidencia en `docs-red-team/evidencias/CU-06/`.
@@ -428,3 +429,32 @@
   3. CVSS, DOCX y la copia en `docs/informe-red-team.md`.
 
 - **Evidencia:** `docs-red-team/informe-red-team.md`.
+
+### 2026-10-28 — Andres
+
+- **Hecho:**
+  - **CU-01 Parte B** (reconocimiento desde "Internet"): sumé una 3ª placa a mi Kali en
+    `vlan_wan` (`eth2` = `203.0.113.100`) y agregué ruta a la DMZ por la WAN.
+  - Escaneos `nmap -Pn` (NULL/FIN/SYN) contra Suricata `10.10.20.50` y SYN al honeypot
+    `10.10.20.30`. Desde la WAN el tráfico sí llega a la DMZ (puertos *closed*; Cowrie
+    `2222/tcp open`).
+  - **Detección confirmada:** Suricata disparó 6 alertas (SID 1000002 NULL, SID 1000003
+    FIN) → Wazuh las correlacionó en la regla **100100, nivel 10**. Cadena completa
+    nmap → Suricata → Wazuh. Sin bloqueo automático (es detección).
+
+- **Incidencias (resueltas):**
+  - Al reencender el laboratorio, `macvlan-promisc.service` quedó en `failed` (el
+    `ExecStart` del loop perdía la variable). Los contenedores no eran alcanzables entre
+    VLANs. Se reescribió con líneas `ExecStart` explícitas por interfaz → `active` y
+    persistente. (Misma piedra del promiscuo que ya había visto Pablo.)
+  - El primer escaneo sin `-Pn` abortó: el firewall filtra ICMP WAN→DMZ, nmap creía el
+    host caído. Con `-Pn` se fuerza y funciona.
+
+- **Pendiente / próximo paso:**
+  1. **CU-04:** revisar si Keycloak registró el login en Events (único caso de detección
+     que falta).
+  2. **RT-06:** sin ejecutar todavía (CU-05/RT-05 y RT-07 ya los cerró Pablo).
+
+- **Evidencia:** `docs-red-team/evidencias/CU-01/script-5.png` (sin `-Pn`) y
+  `script-6.png` (con `-Pn`). El detalle formal está en
+  `informe-evidencias-redteam.md`, CU-01 Parte B.
