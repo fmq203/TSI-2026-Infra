@@ -1,0 +1,29 @@
+Captura 27/10/2026 — RT-10, Pablo.
+Objetivo de la letra: compromiso del SIEM/SOAR, si se llega, y el impacto.
+Posición: navegador de Windows por túnel SSH a 10.10.90.12:5601.
+El firewall no publica ese puerto hacia la WAN. No se usó Kali.
+No se modificó ninguna regla.
+
+/app/wazuh respondió "Application Not Found". La aplicación se abre
+desde el menú. La home de esta captura es /app/home, OpenSearch
+Dashboards, sin formulario de login.
+
+=== Qué se vio ===
+Endpoints, filtro status:active, 2 agentes:
+002  ssh-client        10.10.30.10  Debian 12  v4.9.0  active
+003  0d6d5a812295      10.10.10.10  Debian 9   v4.9.0  active
+El gráfico cuenta además 1 desconectado, que no entra en ese filtro.
+La pantalla ofrece "Deploy new agent". No se usó.
+
+Threat Hunting, 24/10 23:54 → 27/10 23:54:
+234 eventos, 1 de nivel 12 o más, 16 fallos de autenticación,
+0 autenticaciones exitosas. Entre las tácticas MITRE figuran
+Brute Force y Web Shell. Las filas visibles de la primera página
+son arranque de agentes, anomalías de host y benchmarks CIS.
+
+=== Conclusión ===
+Se llegó a la consola del SIEM sin usuario. El impacto es de lectura:
+inventario de agentes, direcciones y el historial de detección.
+No hubo shell en el manager. TheHive no está desplegado; el SOAR
+de este laboratorio es el Active Response de Wazuh, y se opera
+desde esta misma consola. Mismo hueco que H-04.2.

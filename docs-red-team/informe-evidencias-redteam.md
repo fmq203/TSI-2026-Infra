@@ -432,6 +432,52 @@ junto con H-04.1 y H-04.2.
 
 ---
 
+## RT-10 — Consola del SIEM
+
+- **Objetivo de la letra (7.2):** compromiso del servidor SIEM/SOAR, si se llega, y su impacto.
+- **Posición del atacante:** navegador de Windows por túnel SSH a `10.10.90.12:5601`.
+  El firewall no publica ese puerto hacia la WAN. No se usó Kali.
+- **Resultado:** la consola abre sin usuario y deja leer agentes y alertas.
+
+Pablo, 27/10/2026. `http://localhost:5601/app/wazuh` respondió «Application
+Not Found». La home que carga es `http://localhost:5601/app/home`, OpenSearch
+Dashboards, sin formulario de login. Desde el menú de la W se abre la
+aplicación.
+
+En **Endpoints**, con filtro de activos, hay dos agentes en `active`:
+
+| ID | Nombre | IP | Sistema | Versión |
+|---|---|---|---|---|
+| 002 | `ssh-client` | `10.10.30.10` | Debian 12 | 4.9.0 |
+| 003 | `0d6d5a812295` | `10.10.10.10` | Debian 9 | 4.9.0 |
+
+El gráfico suma un tercero desconectado, que queda fuera de ese filtro.
+La pantalla muestra **Deploy new agent**. No se enroló ninguno.
+
+**Threat Hunting**, del 24/10 23:54 al 27/10 23:54: 234 eventos, 1 de nivel
+12 o más, 16 fallos de autenticación y ninguna autenticación exitosa. El
+resumen MITRE incluye Brute Force y Web Shell. La primera página de la
+tabla son arranques de agente, anomalías de host y benchmarks CIS.
+
+TheHive no está en el laboratorio. El SOAR es el Active Response de Wazuh
+y se maneja desde esta consola. No se cambió ninguna regla y no hubo shell
+en el manager.
+
+### Evidencia
+- `evidencias/RT-10/01_Wazuh home.png` — `/app/home` sin login.
+- `evidencias/RT-10/02_listado de agentes.png` — dos agentes activos, con IP.
+- `evidencias/RT-10/03_Threat Hunting.png` — 234 eventos, incluido nivel 12.
+- `evidencias/RT-10/2026-10-27_RT-10_consola-siem.txt`
+
+### Hallazgo / conclusión
+**H-10.1 — La consola del SIEM se lee sin autenticación.** Quien llega a la
+VLAN de Gestión ve el inventario de la detección y el historial de alertas,
+incluidos los casos de fuerza bruta y de webshell. Es el impacto de H-04.2.
+Severidad alta. RT-10 queda cerrado en ese alcance: se llegó a la consola,
+no al sistema operativo del manager.
+
+---
+
 ## Resumen de hallazgos
 
 | ID | Hallazgo | Severidad | Estado |
@@ -451,4 +497,5 @@ junto con H-04.1 y H-04.2.
 | H-07.7 | App de préstamos = DVWA, vulnerable a propósito | Alta | Por diseño |
 | H-08.1 | Wazo no desplegado; RT-08 no ejecutable | Informativa | Cerrado 27/10 |
 | H-09.1 | MFA administrativo ausente: no existe el realm `lab` y las consolas no piden segundo factor | Alta | Cerrado 27/10 |
+| H-10.1 | Consola del SIEM sin autenticación: expone agentes y el historial de alertas | Alta | Cerrado 27/10 |
 | ... | _(se agregan a medida que avanzan los casos)_ | | |

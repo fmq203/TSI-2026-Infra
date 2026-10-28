@@ -31,7 +31,7 @@
 - **Entorno:** levantado. Kali de Pablo con NAT + `vlan_wan` (`203.0.113.100`) +
   `vlan_usr` (`10.10.30.100`).
 - **Ataques:** CU-01 Parte A hecha (Andres); CU-02 y CU-03 hechos (Pablo, 25/10);
-  RT-08 y RT-09 cerrados (Pablo, 27/10).
+  RT-08, RT-09 y RT-10 cerrados (Pablo, 27/10).
   Pendientes: CU-01 Parte B (Andres), CU-04 (Events de Keycloak), CU-05.
 - **Estático (CU-06):** Parte A, Trivy 0.76.1 sobre Dockerfiles y secretos.
   Parte B, Semgrep 1.182.1 sobre shell, Dockerfiles, compose y secretos (26/10).
@@ -280,3 +280,29 @@
   `02_lista de realms.jpg`, `03_Wazuh sin login.png` y
   `2026-10-27_RT-09_mfa-ausente.txt`.
   El detalle formal está en `informe-evidencias-redteam.md`, RT-09.
+
+### 2026-10-27 — Pablo
+
+- **Hecho:**
+  - **RT-10** desde el navegador de Windows, túnel a `10.10.90.12:5601`.
+    Sin Kali. `/app/wazuh` respondió «Application Not Found»; la aplicación
+    se abre desde el menú y la home es `/app/home`, sin login.
+  - **Endpoints:** agentes activos `002 ssh-client` (`10.10.30.10`) y
+    `003` (`10.10.10.10`). El gráfico marca uno más, desconectado.
+  - **Threat Hunting** (24/10 23:54 → 27/10 23:54): 234 eventos, 1 de nivel
+    12 o más, 16 fallos de autenticación. El resumen MITRE incluye Brute
+    Force y Web Shell.
+  - No se cambió configuración ni se obtuvo shell del manager. TheHive no
+    está desplegado.
+
+- **Incidencias:** ninguna.
+
+- **Pendiente / próximo paso:**
+  1. **Andres — CU-01 Parte B.**
+  2. **CU-04:** Events de Keycloak.
+  3. **CU-05**, RT-11, RT-12 y RT-04 a RT-07.
+
+- **Evidencia:** `docs-red-team/evidencias/RT-10/01_Wazuh home.png`,
+  `02_listado de agentes.png`, `03_Threat Hunting.png` y
+  `2026-10-27_RT-10_consola-siem.txt`.
+  El detalle formal está en `informe-evidencias-redteam.md`, RT-10.
