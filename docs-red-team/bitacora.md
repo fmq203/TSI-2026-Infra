@@ -39,6 +39,7 @@
 - **Avisos (CU-07):** Wazuh 4.9.0 y Keycloak `26.0` caen en avisos públicos.
   DVWA es vulnerable a propósito. Los tags `:latest` no se marcaron.
 - **Documento de evidencias:** `informe-evidencias-redteam.md`.
+- **Informe formal:** `informe-red-team.md`, versión 0.7 (preliminar 28/10).
 
 ---
 
@@ -413,3 +414,17 @@
 - **Evidencia:** `docs-red-team/evidencias/RT-07/2026-10-28_RT-07_reglas-publicas.txt`
   y la captura `evidencias/RT-04/02_Threat Hunting.png`.
   El detalle formal está en `informe-evidencias-redteam.md`, RT-07.
+
+### 2026-10-28 — Pablo
+
+- **Hecho:**
+  - Preliminar de `informe-red-team.md` (versión 0.7) para la pre-entrega.
+    Pasa los objetivos y los hallazgos ya cerrados. El CVSS y el DOCX
+    quedan para el 09/11.
+
+- **Pendiente / próximo paso:**
+  1. **Andres — CU-01 Parte B.**
+  2. **CU-04:** Events de Keycloak.
+  3. CVSS, DOCX y la copia en `docs/informe-red-team.md`.
+
+- **Evidencia:** `docs-red-team/informe-red-team.md`.
