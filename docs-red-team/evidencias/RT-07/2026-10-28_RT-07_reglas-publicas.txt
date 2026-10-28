@@ -1,0 +1,29 @@
+Nota 28/10/2026 — RT-07, Pablo.
+Objetivo de la letra: evasión del SIEM (inyección de logs o formato
+malicioso) o abuso de reglas.
+No se inyectó ningún log. No se usó Kali.
+
+=== Qué está publicado ===
+infra/siem-hids/config/wazuh_manager/local_rules.xml está en el repo
+público. configure-manager.sh lo copia al manager. Las reglas locales
+matan así:
+
+- 100100, nivel 10: alerta de Suricata cuyo signature_id es 1000001 a
+  1000005 (los escaneos de CU-01).
+- 100110, nivel 8: JSON de Cowrie con eventid cowrie.login.failed.
+- 100200, nivel 12: FIM de un .php nuevo bajo /var/www/html.
+
+El ruleset de serie de Wazuh sigue activo (por ejemplo los fallos SSH
+del CU-02). Estas tres son las que el laboratorio agregó, y el campo
+que cada una exige está escrito en el repo.
+
+=== Ya observado ===
+RT-04: Cowrie aceptó la sesión de nosoy. Threat Hunting con rule.id
+100110 dio cero resultados, porque el evento no era un login fallido.
+RT-05: no hay regla para DNS, así que esa salida no tiene alerta local.
+
+=== Conclusión ===
+Quien lee el repo sabe qué forma tiene que tener un evento para entrar
+en las reglas locales, y qué actividad queda afuera. No hizo falta
+inyectar un log para verlo: el ingreso aceptado en Cowrie ya pasó sin
+alerta. RT-07 se cierra con esa evidencia.

@@ -1,0 +1,22 @@
+Nota 28/10/2026 — RT-05, Pablo.
+Es el mismo objetivo que el CU-05 del Blue Team: exfiltración simulada
+por DNS o TLS, y ver si el SIEM la correlaciona.
+No se generó tráfico. No se usó Kali.
+
+=== Qué hay en el laboratorio ===
+docs/40-consigna-propia.md define el CU-05 así: Suricata o Wazuh
+correlacionan un volumen anómalo de consultas DNS y notifican por un
+segundo canal.
+
+infra/nids/rules/local.rules no tiene firma DNS ni de exfiltración.
+Las reglas locales de Wazuh son solo tres: 100100 (escaneo), 100110
+(login fallido en Cowrie) y 100200 (PHP nuevo en el webroot).
+
+Suricata está en 10.10.20.50 y no tiene espejo del resto de la red
+(docs/00-arquitectura.md §1.4). Un DNS hacia internet no pasa por el
+sensor. El segundo canal de alerta fue recortado; queda el mail, y no
+hay una regla que lo dispare para este caso.
+
+=== Conclusión ===
+No hay correlación que probar. RT-05 / CU-05 se cierra sin enviar
+consultas DNS.

@@ -215,24 +215,10 @@ sigue sin revisar.
 
 ## CU-05 — Exfiltración de datos por DNS
 
-- **Objetivo:** Base de datos de préstamos / salida DNS
-- **Posición del atacante:** host comprometido (DVWA vía webshell, o Kali)
-- **Detección esperada (Blue Team):** **no implementada** (CU-05 quedó pendiente en el
-  Blue Team) — hipótesis a confirmar.
-
-### Comandos ejecutados
-```bash
-_(a completar)_
-```
-
-### Resultado
-_(a completar)_
-
-### Evidencia
-_(capturas en `evidencias/CU-05/`)_
-
-### Hallazgo / conclusión
-_(a completar)_
+Mismo objetivo que el RT-05 de la letra. Cerrado el 28/10 sin generar
+tráfico: no hay regla DNS en Suricata ni en Wazuh, y el sensor no ve las
+consultas que salen a internet. El detalle está en la sección RT-05.
+Evidencia: `evidencias/RT-05/2026-10-28_RT-05_sin-correlacion-dns.txt`.
 
 ---
 
@@ -395,6 +381,63 @@ Las capturas están en `evidencias/RT-04/`.
 
 ### Hallazgo / conclusión
 **H-R04.1 — El honeypot acepta la sesión y esa entrada no se alerta.** La trampa funciona: quien entra por el 2222 cae en Cowrie. La detección publicada solo mira el login fallido, y este ingreso fue aceptado. Severidad media. RT-04 queda cerrado con ese resultado. No se usa el id H-04 para no pisar los hallazgos de credenciales.
+
+---
+
+## RT-05 — Exfiltración por DNS
+
+- **Objetivo de la letra (7.2):** exfiltración simulada por DNS o TLS, y ver si el SIEM la correlaciona.
+- **Caso de uso del Blue Team:** CU-05.
+- **Posición del atacante:** no aplica. No se generó tráfico y no se usó Kali.
+- **Resultado:** no hay correlación implementada.
+
+Pablo, 28/10/2026. En `docs/40-consigna-propia.md` el CU-05 espera que
+Suricata o Wazuh marquen un volumen anómalo de DNS y avisen por un
+segundo canal.
+
+`infra/nids/rules/local.rules` no tiene firma de DNS ni de exfiltración.
+Las reglas locales de Wazuh son la `100100` (escaneo), la `100110` (login
+fallido en Cowrie) y la `100200` (PHP nuevo en el webroot). Suricata sigue
+en `10.10.20.50` sin espejo del resto de la red (`docs/00-arquitectura.md`
+§1.4): una consulta DNS hacia internet no pasa por el sensor. El segundo
+canal de alerta fue recortado.
+
+No se enviaron consultas. No habría alerta que medir.
+
+### Evidencia
+- `evidencias/RT-05/2026-10-28_RT-05_sin-correlacion-dns.txt`
+
+### Hallazgo / conclusión
+**H-05.1 — No hay correlación de exfiltración por DNS.** El control que el
+CU-05 describe no está en las reglas ni en la visibilidad del sensor.
+Severidad media. RT-05 queda cerrado sin ejecutar la prueba.
+
+---
+
+## RT-07 — Evasión del SIEM
+
+- **Objetivo de la letra (7.2):** evasión del SIEM por inyección de logs o por abuso de las reglas.
+- **Posición del atacante:** el repositorio público, más el intento ya hecho contra Cowrie. No se inyectó un log y no se usó Kali.
+- **Resultado:** las reglas locales están publicadas y solo coinciden con una forma concreta. Lo que no tiene esa forma no alerta.
+
+Pablo, 28/10/2026. `infra/siem-hids/config/wazuh_manager/local_rules.xml` está en el repo y `configure-manager.sh` lo copia al manager. Las tres reglas locales exigen un campo preciso:
+
+| Regla | Nivel | Coincide solo si |
+|---|---|---|
+| `100100` | 10 | Suricata trae un `signature_id` `1000001`–`1000005` |
+| `100110` | 8 | el JSON de Cowrie trae `eventid` = `cowrie.login.failed` |
+| `100200` | 12 | el FIM ve un `.php` nuevo bajo `/var/www/html` |
+
+El ruleset de serie sigue activo: el CU-02 alertó por las reglas estándar de SSH. Estas tres son el agregado del laboratorio, y la condición de cada una se puede leer sin entrar a la consola.
+
+Eso ya se vio. En el RT-04 Cowrie aceptó la sesión y Threat Hunting con `rule.id: 100110` no devolvió nada, porque el evento no era un login fallido. En el RT-05 no existe una regla de DNS. No se armó un log falso: con el ingreso aceptado en el honeypot alcanza para mostrar el hueco.
+
+### Evidencia
+- `evidencias/RT-07/2026-10-28_RT-07_reglas-publicas.txt`
+- `evidencias/RT-04/02_Threat Hunting.png` — la `100110` en cero después de una sesión aceptada.
+
+### Hallazgo / conclusión
+**H-R07.1 — Las reglas locales son públicas y fáciles de no coincidir.** Quien lee el repo sabe qué evento entra en cada una. Una sesión aceptada por Cowrie ya pasó sin alerta. Severidad media. RT-07 queda cerrado sin inyectar logs. El id no es H-07 para no pisar los avisos de CVE del CU-07.
 
 ---
 
@@ -572,6 +615,8 @@ El `Makefile` de `infra/` copia cada `.env.example` a `.env` cuando ese archivo 
 | H-04.1 | Keycloak con credencial admin por defecto (`admin`/`changeme`) | Alta | Confirmado |
 | H-04.2 | Wazuh dashboard sin autenticación | Alta | Confirmado |
 | H-R04.1 | Cowrie acepta el SSH y la regla 100110 (solo login fallido) no alerta | Media | Cerrado 28/10 |
+| H-05.1 | No hay correlación de exfiltración por DNS (CU-05 / RT-05) | Media | Cerrado 28/10 |
+| H-R07.1 | Reglas locales públicas y de coincidencia estrecha: un login aceptado en Cowrie no alerta | Media | Cerrado 28/10 |
 | H-EST-01 | Dockerfiles de los blancos corren como root (Trivy DS-0002; Semgrep `last-user-is-root`, `missing-user`, `missing-user-entrypoint`) | Alta | Confirmado, estático |
 | H-EST-02 | Base de la app fijada en `vulnerables/web-dvwa:latest` (Trivy DS-0001) | Media | Confirmado, estático |
 | H-EST-03 | Expansiones sin comillas en `configure-manager.sh` e `isolate-webapp.sh` (Semgrep) | Baja | Confirmado, estático |

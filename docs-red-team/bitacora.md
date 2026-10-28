@@ -31,8 +31,8 @@
 - **Entorno:** levantado. Kali de Pablo con NAT + `vlan_wan` (`203.0.113.100`) +
   `vlan_usr` (`10.10.30.100`).
 - **Ataques:** CU-01 Parte A hecha (Andres); CU-02 y CU-03 hechos (Pablo, 25/10);
-  RT-04 cerrado (Pablo, 28/10); RT-08, RT-09, RT-10 y RT-11 cerrados (Pablo, 27/10); RT-12 cerrado (Pablo, 28/10).
-  Pendientes: CU-01 Parte B (Andres), CU-04 (Events de Keycloak), CU-05.
+  RT-04, RT-05 y RT-07 cerrados (Pablo, 28/10); RT-08, RT-09, RT-10 y RT-11 cerrados (Pablo, 27/10); RT-12 cerrado (Pablo, 28/10).
+  Pendientes: CU-01 Parte B (Andres), CU-04 (Events de Keycloak).
 - **Estático (CU-06):** Parte A, Trivy 0.76.1 sobre Dockerfiles y secretos.
   Parte B, Semgrep 1.182.1 sobre shell, Dockerfiles, compose y secretos (26/10).
   Evidencia en `docs-red-team/evidencias/CU-06/`.
@@ -372,3 +372,44 @@
   `02_Threat Hunting.png` y
   `docs-red-team/evidencias/RT-04/2026-10-28_RT-04_cowrie-sin-alerta.txt`.
   El detalle formal está en `informe-evidencias-redteam.md`, RT-04.
+
+### 2026-10-28 — Pablo
+
+- **Hecho:**
+  - **RT-05** (el CU-05 del Blue Team) cerrado sin generar tráfico y sin Kali.
+  - No hay firma DNS ni de exfiltración en `infra/nids/rules/local.rules`.
+    Wazuh, en reglas locales, tiene la `100100`, la `100110` y la `100200`.
+  - Suricata no ve el DNS que sale a internet: no hay espejo más allá de
+    `10.10.20.50`. El segundo canal de alerta fue recortado.
+
+- **Incidencias:** ninguna.
+
+- **Pendiente / próximo paso:**
+  1. **Andres — CU-01 Parte B.**
+  2. **CU-04:** Events de Keycloak.
+  3. **RT-07.**
+
+- **Evidencia:** `docs-red-team/evidencias/RT-05/2026-10-28_RT-05_sin-correlacion-dns.txt`.
+  El detalle formal está en `informe-evidencias-redteam.md`, RT-05.
+
+### 2026-10-28 — Pablo
+
+- **Hecho:**
+  - **RT-07** cerrado sin inyectar logs y sin Kali.
+  - `local_rules.xml` está en el repo público. La `100100` solo matchea
+    los SID `1000001`–`1000005`, la `100110` solo un
+    `cowrie.login.failed` y la `100200` solo un `.php` nuevo en
+    `/var/www/html`. El ruleset de serie sigue activo.
+  - El RT-04 ya lo mostró: Cowrie aceptó la sesión y la `100110` no
+    devolvió resultados.
+
+- **Incidencias:** ninguna.
+
+- **Pendiente / próximo paso:**
+  1. **Andres — CU-01 Parte B.**
+  2. **CU-04:** Events de Keycloak.
+  3. Completar `informe-red-team.md` para la pre-entrega.
+
+- **Evidencia:** `docs-red-team/evidencias/RT-07/2026-10-28_RT-07_reglas-publicas.txt`
+  y la captura `evidencias/RT-04/02_Threat Hunting.png`.
+  El detalle formal está en `informe-evidencias-redteam.md`, RT-07.
