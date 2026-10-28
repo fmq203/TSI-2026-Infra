@@ -1,0 +1,19 @@
+Captura 27/10/2026 — RT-08, Pablo.
+Objetivo de la letra: atacar Wazo (extensiones falsas, IVR, enumeración).
+El activo no está desplegado. No hubo ataque.
+
+El Blue Team lo recortó con la habilitación del docente del 05/10/2026
+(brain/decisions.md, entrada 2026-10-05; README.md, "Recortes con
+justificación"). docs/00-arquitectura.md reserva 10.10.20.40 y marca el
+contenedor como no construido.
+
+=== Comprobación con las VMs encendidas (27/10, ~23:26 hora local) ===
+docker ps en docker-host: no hay contenedor de Wazo.
+Desde el router (10.10.20.254):
+
+ping -c 2 -W 2 10.10.20.40
+2 packets transmitted, 0 received, 100% packet loss
+
+=== Nota ===
+El firewall igual publica UDP 5060 de la WAN hacia la DMZ, el puerto que
+iba a usar Wazo. Del otro lado no hay servicio.

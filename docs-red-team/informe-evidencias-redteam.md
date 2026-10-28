@@ -365,6 +365,34 @@ Evidencia: `evidencias/CU-07/2026-10-26_CU-07_avisos-publicos.txt`.
 
 ---
 
+## RT-08 — Ataque a Wazo
+
+- **Objetivo de la letra (7.2):** extensiones falsas, exploit de IVR o enumeración de Wazo.
+- **Posición del atacante:** no aplica. No se usó Kali.
+- **Resultado:** el objetivo no es ejecutable. Wazo no está desplegado.
+
+El 05/10/2026 el docente habilitó recortar alcance. El Blue Team dejó Wazo
+afuera (`brain/decisions.md`, entrada de esa fecha; `README.md`). En
+`docs/00-arquitectura.md` la IP `10.10.20.40` figura reservada y el
+contenedor como no construido.
+
+Pablo, 27/10/2026, con las VMs encendidas. `docker ps` en `docker-host` no
+muestra un contenedor de Wazo. Desde el router, `ping -c 2 -W 2 10.10.20.40`
+dio 2 paquetes enviados y 0 respuestas. No hay central, extensiones ni IVR.
+
+El firewall publica UDP 5060 de la WAN hacia la DMZ, el puerto previsto para
+Wazo. No hay proceso del otro lado.
+
+### Evidencia
+- `evidencias/RT-08/2026-10-27_RT-08_wazo-ausente.txt`
+
+### Hallazgo / conclusión
+**H-08.1 — Wazo ausente.** El canal de telefonía de la letra no está en el
+laboratorio. RT-08 queda cerrado por ausencia del activo, no por un ataque
+contenido. Severidad informativa: no hay servicio que comprometer.
+
+---
+
 ## Resumen de hallazgos
 
 | ID | Hallazgo | Severidad | Estado |
@@ -382,4 +410,5 @@ Evidencia: `evidencias/CU-07/2026-10-26_CU-07_avisos-publicos.txt`.
 | H-07.5 | Keycloak `26.0` dentro de CVE-2026-7507 | Alta | Confirmado por versión |
 | H-07.6 | Keycloak `26.0` dentro de CVE-2026-4634 | Alta | Confirmado por versión |
 | H-07.7 | App de préstamos = DVWA, vulnerable a propósito | Alta | Por diseño |
+| H-08.1 | Wazo no desplegado; RT-08 no ejecutable | Informativa | Cerrado 27/10 |
 | ... | _(se agregan a medida que avanzan los casos)_ | | |

@@ -30,7 +30,8 @@
 
 - **Entorno:** levantado. Kali de Pablo con NAT + `vlan_wan` (`203.0.113.100`) +
   `vlan_usr` (`10.10.30.100`).
-- **Ataques:** CU-01 Parte A hecha (Andres); CU-02 y CU-03 hechos (Pablo, 25/10).
+- **Ataques:** CU-01 Parte A hecha (Andres); CU-02 y CU-03 hechos (Pablo, 25/10);
+  RT-08 cerrado (Pablo, 27/10): Wazo no está desplegado.
   Pendientes: CU-01 Parte B (Andres), CU-04 (ampliar), CU-05.
 - **Estático (CU-06):** Parte A, Trivy 0.76.1 sobre Dockerfiles y secretos.
   Parte B, Semgrep 1.182.1 sobre shell, Dockerfiles, compose y secretos (26/10).
@@ -233,3 +234,23 @@
 
 - **Evidencia:** `docs-red-team/evidencias/CU-07/2026-10-26_CU-07_avisos-publicos.txt`.
   El detalle formal está en `informe-evidencias-redteam.md`, CU-07.
+
+### 2026-10-27 — Pablo
+
+- **Hecho:**
+  - **RT-08** cerrado sin ataque. Wazo no está construido: recorte habilitado
+    por el docente el 05/10 (`brain/decisions.md`, `README.md`). La IP
+    `10.10.20.40` está reservada en `docs/00-arquitectura.md`.
+  - Con las VMs encendidas, `docker ps` no muestra contenedor de Wazo. Desde
+    el router, `ping -c 2 -W 2 10.10.20.40` dio 100 % de pérdida.
+  - El firewall sigue publicando UDP 5060 WAN → DMZ. No hay servicio detrás.
+
+- **Incidencias:** ninguna.
+
+- **Pendiente / próximo paso:**
+  1. **Andres — CU-01 Parte B.**
+  2. **CU-04** (ampliar), **CU-05**, y el resto de objetivos 7.2 que siguen
+     abiertos (RT-09 a RT-12, RT-04 a RT-07, RT-01 Parte B).
+
+- **Evidencia:** `docs-red-team/evidencias/RT-08/2026-10-27_RT-08_wazo-ausente.txt`.
+  El detalle formal está en `informe-evidencias-redteam.md`, RT-08.
