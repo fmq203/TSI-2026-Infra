@@ -509,6 +509,31 @@ RT-11 queda cerrado sin ejecutar la prueba.
 
 ---
 
+## RT-12 — OSINT del repositorio
+
+- **Objetivo de la letra (7.2):** buscar secretos y credenciales en el repositorio.
+- **Posición del atacante:** clon local y el historial de git. No se usó Kali.
+- **Resultado:** no hay claves privadas ni `.env` en el historial. Las contraseñas de arranque están en el árbol público.
+
+Pablo, 28/10/2026. `git log --all` sobre `*.env`, `*.key`, `*.pem`, `*id_rsa*` y `*.p12` no devuelve commits. En `infra/identity/certs/` solo entraron, en `40364c8`, el certificado `auth.lab.local.crt`, su `.ext` y `lab-ca.crt`. `.gitignore` deja afuera `.env`, `infra/*/ssl/` y los `config.xml` de OPNsense.
+
+El `Makefile` de `infra/` copia cada `.env.example` a `.env` cuando ese archivo no existe. Esos ejemplos están versionados:
+
+- `infra/identity/.env.example`: admin y base de Keycloak en `changeme` (el mismo valor de H-04.1).
+- `infra/mail/.env.example`: clave del buzón `soc@lab.local` en `changeme`.
+- `infra/targets/.env.example`: root de la base y la clave débil de `labuser`.
+- `infra/siem-hids/.env.example`: `WAZUH_API_PASSWORD` con un valor fijo. En un despliegue nuevo esa es la clave de la API.
+
+`README.md` publica `admin` / `changeme`, la clave de `labuser` y `admin-lab` / `Prueba123`. `vagrant/README.md` repite la de Keycloak. Los scanners de CU-06 no marcaron estas cadenas: están escritas como valores de ejemplo.
+
+### Evidencia
+- `evidencias/RT-12/2026-10-28_RT-12_osint-repo.txt`
+
+### Hallazgo / conclusión
+**H-12.1 — El repo público trae las contraseñas con las que arranca el laboratorio.** No se filtró material criptográfico privado. Quien lee el repositorio obtiene las cuentas de Keycloak, del SSH de prueba, del mail del SOC y de la API de Wazuh, y `make up` las deja operativas. Severidad alta. RT-12 queda cerrado.
+
+---
+
 ## Resumen de hallazgos
 
 | ID | Hallazgo | Severidad | Estado |
@@ -530,4 +555,5 @@ RT-11 queda cerrado sin ejecutar la prueba.
 | H-09.1 | MFA administrativo ausente: no existe el realm `lab` y las consolas no piden segundo factor | Alta | Cerrado 27/10 |
 | H-10.1 | Consola del SIEM sin autenticación: expone agentes y el historial de alertas | Alta | Cerrado 27/10 |
 | H-11.1 | No hay regla de DoS; Suricata solo alerta volumen de escaneo hacia su propio alcance | Media | Cerrado 27/10 |
+| H-12.1 | El repo público trae las contraseñas de arranque (Keycloak, SSH, mail, API de Wazuh) | Alta | Cerrado 28/10 |
 | ... | _(se agregan a medida que avanzan los casos)_ | | |

@@ -31,7 +31,7 @@
 - **Entorno:** levantado. Kali de Pablo con NAT + `vlan_wan` (`203.0.113.100`) +
   `vlan_usr` (`10.10.30.100`).
 - **Ataques:** CU-01 Parte A hecha (Andres); CU-02 y CU-03 hechos (Pablo, 25/10);
-  RT-08, RT-09, RT-10 y RT-11 cerrados (Pablo, 27/10).
+  RT-08, RT-09, RT-10 y RT-11 cerrados (Pablo, 27/10); RT-12 cerrado (Pablo, 28/10).
   Pendientes: CU-01 Parte B (Andres), CU-04 (Events de Keycloak), CU-05.
 - **Estático (CU-06):** Parte A, Trivy 0.76.1 sobre Dockerfiles y secretos.
   Parte B, Semgrep 1.182.1 sobre shell, Dockerfiles, compose y secretos (26/10).
@@ -327,3 +327,26 @@
 
 - **Evidencia:** `docs-red-team/evidencias/RT-11/2026-10-27_RT-11_sin-deteccion-dos.txt`.
   El detalle formal está en `informe-evidencias-redteam.md`, RT-11.
+
+### 2026-10-28 — Pablo
+
+- **Hecho:**
+  - **RT-12**, OSINT del repo, sobre el clon y el historial. Sin Kali.
+  - El historial no tiene `.env`, claves privadas ni `*.pem`. En
+    `infra/identity/certs/` solo hay certificados públicos (desde `40364c8`).
+  - Los `.env.example` están versionados y el `Makefile` los copia a
+    `.env` en un despliegue nuevo. Ahí figuran `changeme` (Keycloak, mail,
+    base de la app), la clave débil de `labuser` y un valor fijo para
+    `WAZUH_API_PASSWORD`.
+  - `README.md` publica además `admin` / `changeme` y `admin-lab` /
+    `Prueba123`. CU-06 no había marcado estas cadenas.
+
+- **Incidencias:** ninguna.
+
+- **Pendiente / próximo paso:**
+  1. **Andres — CU-01 Parte B.**
+  2. **CU-04:** Events de Keycloak.
+  3. **CU-05** y RT-04 a RT-07.
+
+- **Evidencia:** `docs-red-team/evidencias/RT-12/2026-10-28_RT-12_osint-repo.txt`.
+  El detalle formal está en `informe-evidencias-redteam.md`, RT-12.

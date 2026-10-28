@@ -1,0 +1,33 @@
+Nota 28/10/2026 — RT-12, Pablo.
+OSINT del repositorio público. Revisión del árbol y del historial de git
+en el clon local. No se usó Kali. No se publicó ningún valor nuevo.
+
+=== Historial ===
+git log --all de *.env, *.key, *.pem, *id_rsa* y *.p12: sin commits.
+Lo único bajo infra/identity/certs/ son tres archivos públicos, desde
+40364c8: auth.lab.local.crt, auth.lab.local.ext y lab-ca.crt.
+No hay clave privada. .gitignore excluye .env, infra/*/ssl/ y los
+config.xml de OPNsense.
+
+=== Contraseñas que sí están en el árbol ===
+El Makefile de infra/ copia cada .env.example a .env si el .env no
+existe. Esos ejemplos están en el repo público:
+
+- infra/identity/.env.example — KEYCLOAK_ADMIN_PASSWORD y
+  KEYCLOAK_DB_PASSWORD en changeme. Coincide con H-04.1.
+- infra/mail/.env.example — SOC_MAIL_PASSWORD en changeme.
+- infra/targets/.env.example — DB_ROOT_PASSWORD en changeme y
+  SSH_TEST_PASSWORD en la clave débil del usuario labuser.
+- infra/siem-hids/.env.example — WAZUH_API_PASSWORD con un valor fijo,
+  no un placeholder vacío. Pasa a ser la clave de la API en un
+  despliegue nuevo.
+
+README.md publica además admin/changeme, la clave de labuser y la de
+admin-lab (Prueba123) en el realm lab. vagrant/README.md repite
+admin/changeme.
+
+Los scanners de secretos de CU-06 no marcaron estas cadenas.
+
+=== Conclusión ===
+No se filtró una clave privada ni un .env real. El repo público sí
+entrega las contraseñas con las que el laboratorio arranca.
