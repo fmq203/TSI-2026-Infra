@@ -31,7 +31,7 @@
 - **Entorno:** levantado. Kali de Pablo con NAT + `vlan_wan` (`203.0.113.100`) +
   `vlan_usr` (`10.10.30.100`).
 - **Ataques:** CU-01 Parte A hecha (Andres); CU-02 y CU-03 hechos (Pablo, 25/10);
-  RT-08, RT-09, RT-10 y RT-11 cerrados (Pablo, 27/10); RT-12 cerrado (Pablo, 28/10).
+  RT-04 cerrado (Pablo, 28/10); RT-08, RT-09, RT-10 y RT-11 cerrados (Pablo, 27/10); RT-12 cerrado (Pablo, 28/10).
   Pendientes: CU-01 Parte B (Andres), CU-04 (Events de Keycloak), CU-05.
 - **Estático (CU-06):** Parte A, Trivy 0.76.1 sobre Dockerfiles y secretos.
   Parte B, Semgrep 1.182.1 sobre shell, Dockerfiles, compose y secretos (26/10).
@@ -350,3 +350,25 @@
 
 - **Evidencia:** `docs-red-team/evidencias/RT-12/2026-10-28_RT-12_osint-repo.txt`.
   El detalle formal está en `informe-evidencias-redteam.md`, RT-12.
+
+### 2026-10-28 — Pablo
+
+- **Hecho:**
+  - **RT-04** desde Kali, por la WAN, contra Cowrie `10.10.20.30:2222`.
+  - El SSH del usuario `nosoy` fue aceptado. Apareció el prompt
+    `nosoy@svr04` y se salió con `exit`. No se ejecutó nada adentro.
+  - Threat Hunting con `rule.id: 100110` no devolvió resultados. Esa
+    regla solo coincide con un login fallido, y este ingreso fue
+    aceptado. El mail al SOC pide nivel 10; la regla es nivel 8.
+
+- **Incidencias:** ninguna.
+
+- **Pendiente / próximo paso:**
+  1. **Andres — CU-01 Parte B.**
+  2. **CU-04:** Events de Keycloak.
+  3. **CU-05** (RT-05) y **RT-07**.
+
+- **Evidencia:** `docs-red-team/evidencias/CU-04/01_ssh connect.jpg`,
+  `02_Threat Hunting.png` y
+  `docs-red-team/evidencias/RT-04/2026-10-28_RT-04_cowrie-sin-alerta.txt`.
+  El detalle formal está en `informe-evidencias-redteam.md`, RT-04.

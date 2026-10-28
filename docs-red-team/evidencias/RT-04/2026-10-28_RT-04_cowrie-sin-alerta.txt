@@ -1,0 +1,15 @@
+Captura 28/10/2026 — RT-04, Pablo.
+Honeypot Cowrie, 10.10.20.30 puerto 2222, desde Kali por la WAN.
+
+ssh -p 2222 nosoy@10.10.20.30
+La sesión fue aceptada. Prompt nosoy@svr04. Se salió con exit.
+No se corrió ningún comando adentro.
+
+Threat Hunting, rule.id 100110, desde el 27/10 23:54:
+No results match your search criteria.
+
+La regla 100110 (nivel 8) solo coincide con cowrie.login.failed.
+Este ingreso fue aceptado, así que no entra. El mail al SOC es para
+nivel 10 o más.
+
+Capturas en evidencias/CU-04/ (01_ssh connect.jpg y 02_Threat Hunting.png).

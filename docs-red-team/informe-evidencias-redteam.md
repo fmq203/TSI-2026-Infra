@@ -368,6 +368,36 @@ Evidencia: `evidencias/CU-07/2026-10-26_CU-07_avisos-publicos.txt`.
 
 ---
 
+## RT-04 — Honeypot Cowrie
+
+- **Objetivo de la letra (7.2):** interactuar con el honeypot y ver si se detecta y si se alerta.
+- **Posición del atacante:** Kali, por la placa WAN, contra `10.10.20.30:2222`.
+- **Resultado:** Cowrie aceptó la sesión. Wazuh no generó alerta.
+
+Pablo, 28/10/2026. Desde Kali:
+
+```bash
+ssh -p 2222 -o ConnectTimeout=8 -o StrictHostKeyChecking=no -o NumberOfPasswordPrompts=1 nosoy@10.10.20.30
+```
+
+El puerto aceptó la clave, mostró el aviso de Debian y un prompt `nosoy@svr04`. Se salió con `exit`. No se ejecutó ningún comando adentro.
+
+En Threat Hunting, filtro `rule.id: 100110`, desde el 27/10 23:54 hasta el momento de la captura: «No results match your search criteria».
+
+La regla `100110` (nivel 8) solo coincide con `cowrie.login.failed`. Este intento fue un ingreso aceptado, así que no entra en esa regla. El mail al SOC está configurado para nivel 10 o más: aunque un fallo disparara la 100110, no saldría correo.
+
+Las capturas quedaron en `evidencias/CU-04/`.
+
+### Evidencia
+- `evidencias/CU-04/01_ssh connect.jpg` — sesión SSH aceptada y `exit`.
+- `evidencias/CU-04/02_Threat Hunting.png` — regla 100110 sin resultados.
+- `evidencias/RT-04/2026-10-28_RT-04_cowrie-sin-alerta.txt`
+
+### Hallazgo / conclusión
+**H-R04.1 — El honeypot acepta la sesión y esa entrada no se alerta.** La trampa funciona: quien entra por el 2222 cae en Cowrie. La detección publicada solo mira el login fallido, y este ingreso fue aceptado. Severidad media. RT-04 queda cerrado con ese resultado. No se usa el id H-04 para no pisar los hallazgos de credenciales.
+
+---
+
 ## RT-08 — Ataque a Wazo
 
 - **Objetivo de la letra (7.2):** extensiones falsas, exploit de IVR o enumeración de Wazo.
@@ -541,6 +571,7 @@ El `Makefile` de `infra/` copia cada `.env.example` a `.env` cuando ese archivo 
 | H-00 | Detección caída tras redespliegue + acoplamiento DVWA↔agente (`set -e`) | Media | Documentado |
 | H-04.1 | Keycloak con credencial admin por defecto (`admin`/`changeme`) | Alta | Confirmado |
 | H-04.2 | Wazuh dashboard sin autenticación | Alta | Confirmado |
+| H-R04.1 | Cowrie acepta el SSH y la regla 100110 (solo login fallido) no alerta | Media | Cerrado 28/10 |
 | H-EST-01 | Dockerfiles de los blancos corren como root (Trivy DS-0002; Semgrep `last-user-is-root`, `missing-user`, `missing-user-entrypoint`) | Alta | Confirmado, estático |
 | H-EST-02 | Base de la app fijada en `vulnerables/web-dvwa:latest` (Trivy DS-0001) | Media | Confirmado, estático |
 | H-EST-03 | Expansiones sin comillas en `configure-manager.sh` e `isolate-webapp.sh` (Semgrep) | Baja | Confirmado, estático |
