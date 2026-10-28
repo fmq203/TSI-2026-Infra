@@ -1,0 +1,21 @@
+Nota 27/10/2026 — RT-11, Pablo.
+Objetivo de la letra: DoS acotado contra un servicio no crítico, para
+probar si el monitoreo responde.
+No se generó tráfico. No se usó Kali.
+
+=== Qué hay en el laboratorio ===
+infra/nids/rules/local.rules no tiene una regla de denegación de servicio.
+Las únicas reglas por volumen son de CU-01 (reconocimiento):
+- SID 1000001: 20 SYN en 10 segundos desde el mismo origen, hacia $HOME_NET.
+- SID 1000005: 10 ICMP echo-request en 5 segundos.
+
+Suricata está en 10.10.20.50. docs/00-arquitectura.md §1.4: el espejo del
+router hacia el NIDS, más allá de su propia IP, sigue pendiente. El sensor
+no ve un DoS dirigido a Cowrie, al mail o a la app.
+
+Wazuh no tiene una regla propia de DoS. Un envío contra otro servicio no
+dejaría alerta.
+
+=== Conclusión ===
+El control que el objetivo pide probar no está implementado. RT-11 se
+cierra sin ejecutar la prueba de carga.

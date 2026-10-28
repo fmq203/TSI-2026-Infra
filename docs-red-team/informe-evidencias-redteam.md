@@ -478,6 +478,37 @@ no al sistema operativo del manager.
 
 ---
 
+## RT-11 — DoS acotado
+
+- **Objetivo de la letra (7.2):** DoS acotado contra un servicio no crítico, para probar la respuesta del monitoreo.
+- **Posición del atacante:** no aplica. No se generó tráfico y no se usó Kali.
+- **Resultado:** no hay un control que pueda registrar esa prueba.
+
+Pablo, 27/10/2026, revisión de las reglas del laboratorio.
+`infra/nids/rules/local.rules` no define una firma de denegación de
+servicio. Lo único por volumen es CU-01: el SID `1000001` alerta 20 SYN en
+10 segundos desde el mismo origen, y el SID `1000005` alerta 10 ICMP
+echo-request en 5 segundos. Las dos apuntan a `$HOME_NET`.
+
+Suricata escucha en `10.10.20.50`. En `docs/00-arquitectura.md` §1.4 el
+espejo del router hacia el NIDS, más allá de la IP del propio sensor, sigue
+pendiente. Un DoS contra Cowrie, el mail o la app no pasa por ese punto.
+Wazuh no agrega una regla de DoS encima de eso.
+
+No se envió tráfico de carga. No habría alerta que medir, y el manager, el
+router y la app quedan fuera de cualquier prueba de este tipo.
+
+### Evidencia
+- `evidencias/RT-11/2026-10-27_RT-11_sin-deteccion-dos.txt`
+
+### Hallazgo / conclusión
+**H-11.1 — No hay detección de DoS.** El monitoreo que el objetivo pide
+ejercitar no está. La regla por volumen más cercana es un detector de
+escaneo y solo cubre el tráfico que llega al sensor. Severidad media.
+RT-11 queda cerrado sin ejecutar la prueba.
+
+---
+
 ## Resumen de hallazgos
 
 | ID | Hallazgo | Severidad | Estado |
@@ -498,4 +529,5 @@ no al sistema operativo del manager.
 | H-08.1 | Wazo no desplegado; RT-08 no ejecutable | Informativa | Cerrado 27/10 |
 | H-09.1 | MFA administrativo ausente: no existe el realm `lab` y las consolas no piden segundo factor | Alta | Cerrado 27/10 |
 | H-10.1 | Consola del SIEM sin autenticación: expone agentes y el historial de alertas | Alta | Cerrado 27/10 |
+| H-11.1 | No hay regla de DoS; Suricata solo alerta volumen de escaneo hacia su propio alcance | Media | Cerrado 27/10 |
 | ... | _(se agregan a medida que avanzan los casos)_ | | |

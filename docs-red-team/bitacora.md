@@ -31,7 +31,7 @@
 - **Entorno:** levantado. Kali de Pablo con NAT + `vlan_wan` (`203.0.113.100`) +
   `vlan_usr` (`10.10.30.100`).
 - **Ataques:** CU-01 Parte A hecha (Andres); CU-02 y CU-03 hechos (Pablo, 25/10);
-  RT-08, RT-09 y RT-10 cerrados (Pablo, 27/10).
+  RT-08, RT-09, RT-10 y RT-11 cerrados (Pablo, 27/10).
   Pendientes: CU-01 Parte B (Andres), CU-04 (Events de Keycloak), CU-05.
 - **Estático (CU-06):** Parte A, Trivy 0.76.1 sobre Dockerfiles y secretos.
   Parte B, Semgrep 1.182.1 sobre shell, Dockerfiles, compose y secretos (26/10).
@@ -306,3 +306,24 @@
   `02_listado de agentes.png`, `03_Threat Hunting.png` y
   `2026-10-27_RT-10_consola-siem.txt`.
   El detalle formal está en `informe-evidencias-redteam.md`, RT-10.
+
+### 2026-10-27 — Pablo
+
+- **Hecho:**
+  - **RT-11** cerrado sin generar tráfico y sin Kali.
+  - `infra/nids/rules/local.rules` no tiene firma de DoS. Lo único por
+    volumen es CU-01: SID `1000001` (20 SYN en 10 s) y SID `1000005`
+    (10 ICMP echo en 5 s), hacia `$HOME_NET`.
+  - Suricata está en `10.10.20.50` y no tiene espejo del router
+    (`docs/00-arquitectura.md` §1.4). Un DoS contra otro servicio de la
+    DMZ no llegaría al sensor. Wazuh no agrega una regla de DoS.
+
+- **Incidencias:** ninguna.
+
+- **Pendiente / próximo paso:**
+  1. **Andres — CU-01 Parte B.**
+  2. **CU-04:** Events de Keycloak.
+  3. **CU-05**, RT-12 y RT-04 a RT-07.
+
+- **Evidencia:** `docs-red-team/evidencias/RT-11/2026-10-27_RT-11_sin-deteccion-dos.txt`.
+  El detalle formal está en `informe-evidencias-redteam.md`, RT-11.
