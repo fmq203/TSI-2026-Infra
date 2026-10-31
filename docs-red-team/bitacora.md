@@ -480,3 +480,16 @@
 
 - **Evidencia:** `docs-red-team/evidencias/CU-04/events-keycloak.png`. El detalle formal
   está en `informe-evidencias-redteam.md`, CU-04.
+
+### 2026-10-31 — Pablo
+
+- **Hecho:**
+  - `informe-red-team.md` pasa a versión 1.0.
+  - CVSS v3.1 de cada hallazgo. Los CVE usan el vector del aviso. El resto está calculado para este despliegue.
+  - RT-01 Parte B y H-04.3 se dan por cerrados con lo que Andres ya dejó en el informe de evidencias. No se repitieron las pruebas.
+  - Copia en `docs/informe-red-team.md` y DOCX en `docs/informe-red-team.docx`.
+
+- **Pendiente / próximo paso:**
+  1. Presentación de 10 minutos del 09/11.
+
+- **Evidencia:** `docs/informe-red-team.md`.

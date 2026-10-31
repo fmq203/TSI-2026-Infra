@@ -361,7 +361,7 @@ hoy puede ser otro.
 
 | Producto | Versión en el repo | Aviso | Severidad | Qué implica |
 |---|---|---|---|---|
-| Wazuh manager | 4.9.0 | CVE-2025-24016 | Crítica (9.0) | Deserialización insegura. Quien tenga acceso a la API, o en ciertas configuraciones un agente comprometido, puede ejecutar código en el manager. Corregido en 4.9.1 |
+| Wazuh manager | 4.9.0 | CVE-2025-24016 | Crítica (9.9) | Deserialización insegura. Quien tenga acceso a la API, o en ciertas configuraciones un agente comprometido, puede ejecutar código en el manager. Corregido en 4.9.1. El 9.0 que figuraba antes no es el base del aviso: el vector del CNA es 9.9. |
 | Wazuh manager | 4.9.0 | GHSA-gj9h-8hmr-xjjr | Alta | Un usuario autenticado con el rol `users_admin` puede cambiar la contraseña de las cuentas de administrador reservadas. El aviso incluye 4.9.0; el arreglo de esa línea es 4.10.4 |
 | Wazuh dashboard | 4.9.0 | GHSA-648q-8m78-5cwv | Media (4.6) | Un usuario con pocos privilegios puede ver el listado de agentes. Corregido en 4.9.1. En este laboratorio el dashboard ya abre sin login (H-04.2) |
 | Keycloak | tag `26.0` | CVE-2026-18963 | Crítica (9.1) | Toma de cuenta sin autenticación por el flujo de recuperación de contraseña. La línea 26.0 no tiene parche (el arreglo está en 26.4.15, 26.6.6 o 26.7.2) |
