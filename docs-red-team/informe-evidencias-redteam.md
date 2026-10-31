@@ -269,6 +269,15 @@ SELECT count(*) FROM admin_event_entity;  -- 0  (eventos de administración)
 - CU-04 queda **cerrado**: acceso con credencial por defecto (H-04.1) + consola SIEM sin
   login (H-04.2) + IdP sin MFA ni auditoría (H-04.3). Severidad alta.
 
+### Mapeo al objetivo RT-06
+
+**RT-06 — Credenciales robadas contra consolas** queda **cerrado y documentado** con las
+pruebas de CU-04: se demostró el acceso a Keycloak con la credencial por defecto
+(H-04.1), el dashboard Wazuh abre sin autenticación (H-04.2) y la revisión de Events
+confirmó auditoría desactivada y cero registros (H-04.3). No se hizo una prueba separada
+de credenciales robadas: el objetivo se cubre con el acceso por defecto observado y la
+exposición de ambas consolas.
+
 ---
 
 ## CU-05 — Exfiltración de datos por DNS

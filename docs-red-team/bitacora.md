@@ -32,8 +32,10 @@
   `vlan_usr` (`10.10.30.100`).
 - **Ataques:** CU-01 Parte A y B hechas (Andres, 25 y 28/10); CU-02 y CU-03 hechos
   (Pablo, 25/10); CU-04 cerrado (Andres, 28/10); RT-04, RT-05 y RT-07 cerrados (Pablo,
-  28/10); RT-08, RT-09, RT-10 y RT-11 cerrados (Pablo, 27/10); RT-12 cerrado (Pablo, 28/10).
-  Pendientes: RT-06. (CU-05 cubierto por RT-05.)
+  28/10); RT-06 formalizado con la evidencia de CU-04; RT-08, RT-09, RT-10 y RT-11
+  cerrados (Pablo, 27/10); RT-12 cerrado (Pablo, 28/10). Los 12 objetivos tienen
+  estado documentado; RT-06 se formalizó por cobertura en CU-04, sin prueba separada de
+  credenciales robadas. (CU-05 cubierto por RT-05.)
 - **Estático (CU-06):** Parte A, Trivy 0.76.1 sobre Dockerfiles y secretos.
   Parte B, Semgrep 1.182.1 sobre shell, Dockerfiles, compose y secretos (26/10).
   Evidencia en `docs-red-team/evidencias/CU-06/`.

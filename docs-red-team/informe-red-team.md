@@ -35,7 +35,7 @@
 
 Se evaluó la infraestructura de defensa del Blue Team: firewall nftables, Suricata en la DMZ, Wazuh como SIEM y como SOAR (Active Response), Cowrie, DVWA como app de préstamos y Keycloak. Wazo y el segundo canal de alertas no están desplegados.
 
-Los 12 objetivos de la letra (§7.2) están cerrados. La Parte B del RT-01, desde la WAN, hizo que Suricata viera los escaneos NULL y FIN y que Wazuh los subiera con la regla 100100. Los Events de Keycloak del RT-06 están revisados: la auditoría del realm `master` está apagada y no hay registros.
+Los 12 objetivos de la letra (§7.2) tienen estado documentado. La Parte B del RT-01, desde la WAN, hizo que Suricata viera los escaneos NULL y FIN y que Wazuh los subiera con la regla 100100. Para RT-06 se documenta en CU-04 el acceso con la cuenta de ejemplo de Keycloak, la consola Wazuh sin autenticación y la revisión de Events: la auditoría del realm `master` está apagada y no hay registros. No se probó una credencial obtenida mediante robo; el cierre se limita a esos accesos observados.
 
 La defensa responde cuando el evento coincide con una regla que ya probaron: la fuerza bruta SSH se bloquea y avisa, y un `.php` nuevo en la app aísla el contenedor y avisa. Fuera de esa forma, la actividad no deja alerta. Las consolas de administración se abren sin segundo factor, y las contraseñas de arranque están en el repositorio público.
 
@@ -60,7 +60,7 @@ Objetivos de la §7.2 y estado al 31/10:
 | RT-03 | Webshell / inyección en la app | Cerrado. El control funcionó. La app está en Servidores, no en la DMZ. |
 | RT-04 | Honeypot | Cerrado. Cowrie acepta la sesión y no alerta. |
 | RT-05 | Exfiltración DNS/TLS | Cerrado. No hay correlación. |
-| RT-06 | Credenciales robadas contra consolas | Cerrado. Acceso con la cuenta de ejemplo (H-04.1, H-04.2, H-12.1). Events apagados: cero registros (H-04.3). |
+| RT-06 | Credenciales robadas contra consolas | Cerrado por cobertura documentada en CU-04: acceso con la cuenta de ejemplo de Keycloak (H-04.1), consola Wazuh sin autenticación (H-04.2) y Events apagados con cero registros (H-04.3). No se probó una credencial obtenida mediante robo. |
 | RT-07 | Evasión del SIEM | Cerrado. Reglas locales públicas y de coincidencia estrecha. |
 | RT-08 | Wazo | Cerrado. El activo no existe. |
 | RT-09 | MFA administrativo | Cerrado. El segundo factor no está en este despliegue. |
@@ -72,7 +72,7 @@ No se hizo denegación de servicio, ni exfiltración, ni inyección de logs. No 
 
 ## 3. Metodología
 
-Referencias usadas como marco: PTES, OWASP Testing Guide, MITRE ATT&CK y NIST SP 800-115. En esta preliminar se ejecutó reconocimiento, acceso a consolas, una subida a la app, un SSH al honeypot, revisión de reglas y OSINT del git. No hubo fase de post-explotación sobre un sistema operativo.
+Referencias usadas como marco: PTES, OWASP Testing Guide, MITRE ATT&CK y NIST SP 800-115. Se ejecutó reconocimiento, acceso a consolas, una subida a la app, un SSH al honeypot, revisión de reglas y OSINT del git. No hubo fase de post-explotación sobre un sistema operativo.
 
 Herramientas: navegador por túnel SSH, cliente SSH de Kali, `ping`, `git`, y lectura de `local.rules` y `local_rules.xml`. El análisis estático (Trivy, Semgrep) y el contraste de CVE quedaron en CU-06 y CU-07.
 
@@ -142,7 +142,7 @@ El resto se calculó para este despliegue. Las consolas de Gestión usan vector 
 
 El paso a paso y las horas están en `informe-evidencias-redteam.md`. Acá va el resultado. El vector de cada id está en la sección 4.
 
-### H-04.1 y H-12.1 — Credenciales de arranque
+### H-04.1, H-04.3 y H-12.1 — Credenciales y auditoría de Keycloak
 
 La consola de Keycloak entra con el admin temporal del realm `master`. El `Makefile` copia los `.env.example` a `.env`, y el `README.md` publica esas cuentas. No hay clave privada ni `.env` en el historial de git. La auditoría de ese realm está apagada: `events_enabled` y `admin_events_enabled` en falso, y cero filas en las tablas de eventos (H-04.3). El login con la cuenta de ejemplo no deja rastro y Keycloak no reenvía esos logs a Wazuh. Recomendación: sacar los valores reales del árbol público, rotar lo que ya se desplegó con el ejemplo, y prender Events.
 
@@ -198,6 +198,7 @@ Tras un redespliegue, los agentes pueden quedar desenrolados y la app no arranca
 | RT-04, sesión en Cowrie, 28/10 | Regla 100110: 0 resultados | Ninguna | No |
 | RT-05, RT-07, RT-11 | No hay regla que matchee | Ninguna | No |
 | RT-09, RT-10 | La consola no pide usuario | No aplica | No |
+| RT-06 / CU-04, 28/10 | Acceso con credencial por defecto demostrado; Events desactivado y sin registros | No quedó evento de login ni de administración; el SOC no lo recibe | No |
 
 Los dos playbooks que el Blue Team cerró (bloqueo de IP y aislamiento) funcionan y notifican. TheHive no está; el SOAR es el Active Response de Wazuh. El MFA administrativo declarado en `docs/09-gestion-accesos.md` no está aplicado en este despliegue. La SoA pide una detección que en DNS, DoS y honeypot aceptado no existe.
 
@@ -205,7 +206,7 @@ Los dos playbooks que el Blue Team cerró (bloqueo de IP y aislamiento) funciona
 
 En este orden:
 
-1. Poner autenticación y MFA delante del dashboard y de la consola de Keycloak. Importar el realm con TOTP, o dejar de declararlo.
+1. Poner autenticación y MFA delante del dashboard y de la consola de Keycloak. Importar el realm con TOTP, o dejar de declararlo; activar y centralizar Events para registrar accesos y acciones administrativas.
 2. Sacar las contraseñas de arranque del repositorio público y rotar las que ya se copiaron a `.env`.
 3. Alertar el login aceptado de Cowrie, en un nivel que también mande mail.
 4. Darle a Suricata visibilidad más allá de `10.10.20.50`, y sumar reglas de DNS y de DoS.

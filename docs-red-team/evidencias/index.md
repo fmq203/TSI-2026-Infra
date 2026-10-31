@@ -32,7 +32,8 @@ en el [informe de evaluación técnica](../informe-red-team.md).
 ## Objetivos Red Team (RT)
 
 RT-01, RT-02 y RT-03 corresponden a las pruebas documentadas en CU-01, CU-02 y
-CU-03, respectivamente. RT-06 se trata en CU-04; no tiene una carpeta separada.
+CU-03, respectivamente. RT-06 quedó cerrado con la evidencia de CU-04; no tiene una
+carpeta separada.
 
 | Objetivo | Tema | Evidencia |
 |---|---|---|
