@@ -409,6 +409,25 @@ versión atrasada: es el blanco del ejercicio. CU-03 ya mostró la subida de un
 - **H-07.7:** la app de préstamos es DVWA, vulnerable por diseño.
 
 Evidencia: `evidencias/CU-07/2026-10-26_CU-07_avisos-publicos.txt`.
+## CU-08 — Auditoría de dependencias y tecnologías de infraestructura
+
+**Fecha:** 2026-10-31. Análisis documental de versiones declaradas en `infra/`, cotejadas
+con NVD, avisos oficiales de Wazuh/GitHub e información de soporte de Debian.
+
+- **Resultado:** Wazuh Manager `4.9.0` está dentro de los rangos de CVE-2025-24016
+  (crítica, CVSS 9.9) y CVE-2026-41424 (alta, CVSS 8.2). Wazuh Dashboard `4.9.0`
+  está dentro del rango de CVE-2025-64483 (media, CVSS 4.0 5.3).
+- El Dockerfile de `web-victim` configura repositorios Debian Stretch en HTTP con
+  `trusted=yes` (líneas 6-7) y `--allow-unauthenticated` (líneas 10 y 15). Stretch
+  terminó su soporte LTS en 2022; se registra como riesgo de mantenimiento e integridad
+  de la construcción, sin atribuir un CVE a paquetes cuya versión no se pudo resolver.
+- Las imágenes no se escanearon: el daemon Docker no estaba disponible y no se obtuvo
+  un SBOM. Los tags mutables (entre ellos `latest`) no permiten determinar qué build está
+  desplegado. Los detalles, las ubicaciones, las condiciones de explotación y las fuentes
+  están en [la evidencia CU-08](evidencias/CU-08/2026-10-31_CU-08_auditoria-dependencias.md).
+
+---
+
 
 ---
 
