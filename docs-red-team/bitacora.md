@@ -28,24 +28,22 @@
 
 ## Estado actual (resumen rápido)
 
-- **Entorno:** levantado. Kali de Pablo con NAT + `vlan_wan` (`203.0.113.100`) +
-  `vlan_usr` (`10.10.30.100`).
-- **Ataques:** CU-01 Parte A y B hechas (Andres, 25 y 28/10); CU-02 y CU-03 hechos
-  (Pablo, 25/10); CU-04 cerrado (Andres, 28/10); RT-04, RT-05 y RT-07 cerrados (Pablo,
-  28/10); RT-06 formalizado con la evidencia de CU-04; RT-08, RT-09, RT-10 y RT-11
-  cerrados (Pablo, 27/10); RT-12 cerrado (Pablo, 28/10). Los 12 objetivos tienen
-  estado documentado; RT-06 se formalizó por cobertura en CU-04, sin prueba separada de
-  credenciales robadas. (CU-05 cubierto por RT-05.)
-- **Estático (CU-06):** Parte A, Trivy 0.76.1 sobre Dockerfiles y secretos.
-  Parte B, Semgrep 1.182.1 sobre shell, Dockerfiles, compose y secretos (26/10).
-  Evidencia en `docs-red-team/evidencias/CU-06/`.
-- **Avisos (CU-07):** Wazuh 4.9.0 y Keycloak `26.0` caen en avisos públicos.
-  DVWA es vulnerable a propósito. Los tags `:latest` no se marcaron.
-- **Dependencias (CU-08):** se confirmaron por versión tres avisos aplicables a Wazuh
-  4.9.0 y el uso de Debian Stretch fuera de soporte en `web-victim`. Revisión documental;
-  no se escanearon imágenes porque Docker no pudo conectar con el daemon.
-- **Documento de evidencias:** `informe-evidencias-redteam.md`.
-- **Informe formal:** `informe-red-team.md`, versión 0.7 (preliminar 28/10).
+- **Nomenclatura (31/10):** el trabajo se organiza en **RT-01 a RT-12** (objetivos de la
+  letra) y **AE-01 / AE-02** (análisis estático y de avisos/dependencias). Los hallazgos
+  usan numeración corrida **H-01 a H-25**. Las carpetas `CU-…` se renombraron; el mapeo
+  completo está en la entrada del 31/10 más abajo. Las entradas históricas anteriores
+  conservan los nombres `CU-…` que se usaron ese día.
+- **Entorno:** levantado en VirtualBox (Kali con NAT + `vlan_wan` `203.0.113.100` +
+  `vlan_usr` `10.10.30.100`).
+- **Objetivos:** los **12 RT cerrados**. RT-01 (Partes A y B) y RT-06 (identidad): Andres,
+  25 y 28/10. RT-02, RT-03, RT-04, RT-05, RT-07 a RT-12: Pablo, 25–28/10.
+- **Análisis:** AE-01 (Trivy 0.76.1 + Semgrep 1.182.1, estático) y AE-02 (avisos públicos
+  + auditoría de dependencias). Sin tráfico contra el laboratorio.
+- **Hallazgos:** 2 críticos, 11 altos, 7 medios, 1 bajo, 1 informativo, más 3 observaciones
+  de reconocimiento (H-01, H-02, H-03). Inventario en `informe-red-team.md` §4.
+- **Documentos:** `informe-red-team.md` (v1.1), `informe-evidencias-redteam.md`,
+  `evidencias/index.md`, `guion-presentacion.md`. Presentación de 10 min en el deck
+  (artifact).
 
 ---
 
@@ -520,3 +518,47 @@
   1. Presentación de 10 minutos del 09/11.
 
 - **Evidencia:** `docs/informe-red-team.md`.
+
+### 2026-10-31 — Andres (reordenamiento de nomenclatura)
+
+- **Hecho:** se unificó la numeración, que mezclaba tres esquemas (carpetas `CU-` y `RT-`,
+  hallazgos `H-NN` con el número del caso y parches `H-R…`/`H-EST…`). Nuevo esquema:
+  objetivos **RT-01 a RT-12** (letra) + análisis **AE-01 / AE-02**; hallazgos con
+  numeración corrida **H-01 a H-25** y una columna *Objetivo*. Se actualizaron
+  `informe-red-team.md`, `informe-evidencias-redteam.md`, `evidencias/index.md`,
+  `guion-presentacion.md` y el deck. Las carpetas `evidencias/CU-…` se renombraron con
+  `git mv` (historial conservado); CU-05 se fusionó en RT-05 y CU-08 en AE-02.
+
+- **Mapeo de carpetas:** CU-01→RT-01 · CU-02→RT-02 · CU-03→RT-03 · CU-04→RT-06 ·
+  CU-05→(RT-05) · CU-06→AE-01 · CU-07→AE-02 · CU-08→(AE-02). RT-04, RT-05, RT-07 a RT-12
+  sin cambios.
+
+- **Mapeo de hallazgos (viejo → nuevo):**
+
+| Viejo | Nuevo | Objetivo | Viejo | Nuevo | Objetivo |
+|---|---|---|---|---|---|
+| H-01.1 | H-01 | RT-01 | H-EST-03 | H-12 | AE-01 |
+| H-01.2 | H-02 | RT-01 | H-07.1 | H-13 | AE-02 |
+| H-01.3 | H-03 | RT-01 | H-07.2 | H-14 | AE-02 |
+| H-04.1 | H-04 | RT-06 | H-07.3 | H-15 | AE-02 |
+| H-04.2 | H-05 | RT-06/RT-10 | H-07.4 | H-16 | AE-02 |
+| H-04.3 | H-06 | RT-06 | H-07.5 | H-17 | AE-02 |
+| H-R04.1 | H-07 | RT-04 | H-07.6 | H-18 | AE-02 |
+| H-05.1 | H-08 | RT-05 | H-07.7 | H-19 | AE-02 |
+| H-R07.1 | H-09 | RT-07 | H-08.1 | H-20 | RT-08 |
+| H-EST-01 | H-10 | AE-01 | H-09.1 | H-21 | RT-09 |
+| H-EST-02 | H-11 | AE-01 | H-10.1 | H-22 | RT-10 |
+| | | | H-12.1 | H-24 | RT-12 |
+| | | | H-00 | H-25 | Transversal |
+
+  (H-11.1 → H-23, RT-11.)
+
+- **Nota:** las entradas históricas de esta bitácora (días previos) no se reescriben;
+  conservan los nombres `CU-…` usados entonces. Esta tabla es el puente.
+
+- **Pendiente / próximo paso:**
+  1. Presentación de 10 minutos del 09/11.
+  2. Revisar si CVE-2026-41424 y CVE-2025-64483 (sumados en la auditoría de dependencias,
+     AE-02) se promueven a hallazgos numerados o quedan como contexto.
+
+- **Evidencia:** toda la carpeta `docs-red-team/` actualizada.
