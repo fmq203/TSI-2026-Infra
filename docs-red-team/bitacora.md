@@ -39,6 +39,9 @@
   Evidencia en `docs-red-team/evidencias/CU-06/`.
 - **Avisos (CU-07):** Wazuh 4.9.0 y Keycloak `26.0` caen en avisos públicos.
   DVWA es vulnerable a propósito. Los tags `:latest` no se marcaron.
+- **Dependencias (CU-08):** se confirmaron por versión tres avisos aplicables a Wazuh
+  4.9.0 y el uso de Debian Stretch fuera de soporte en `web-victim`. Revisión documental;
+  no se escanearon imágenes porque Docker no pudo conectar con el daemon.
 - **Documento de evidencias:** `informe-evidencias-redteam.md`.
 - **Informe formal:** `informe-red-team.md`, versión 0.7 (preliminar 28/10).
 
@@ -480,6 +483,28 @@
 
 - **Evidencia:** `docs-red-team/evidencias/CU-04/events-keycloak.png`. El detalle formal
   está en `informe-evidencias-redteam.md`, CU-04.
+
+### 2026-10-31 — revisión de dependencias (CU-08)
+
+- **Hecho:**
+  - Se inventariaron versiones y tags declarados en los compose y Dockerfiles de
+    `infra/`; se contrastaron con NVD CVE 2.0, avisos oficiales de Wazuh/GitHub y la
+    información de soporte de Debian.
+  - Confirmados para Wazuh 4.9.0: **CVE-2025-24016** en Manager (crítica, CVSS 9.9),
+    **CVE-2026-41424** en Manager (alta, CVSS 8.2) y **CVE-2025-64483** en Dashboard
+    (media, CVSS 4.0 5.3, bajo ciertas configuraciones).
+  - `web-victim` parte de `vulnerables/web-dvwa:latest` y configura repositorios Debian
+    Stretch en HTTP con `trusted=yes` y `--allow-unauthenticated`. Stretch terminó su
+    soporte LTS en 2022; se registró como riesgo de mantenimiento e integridad de la
+    construcción, sin asignar un CVE a paquetes no identificados.
+  - Se separaron los componentes con tags móviles o sin digest verificable: no se les
+    atribuyeron CVE nuevos sin conocer el contenido exacto de las imágenes.
+  - Se consultaron los resultados previos de Trivy 0.76.1 y Semgrep 1.182.1 de CU-06.
+    Sus alcances no equivalen a escanear vulnerabilidades de paquetes/imágenes.
+
+
+- **Evidencia:** `docs-red-team/evidencias/CU-08/2026-10-31_CU-08_auditoria-dependencias.md`.
+  El resumen formal está en `informe-evidencias-redteam.md`, CU-08.
 
 ### 2026-10-31 — Pablo
 
