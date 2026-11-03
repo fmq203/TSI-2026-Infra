@@ -303,7 +303,7 @@ Severidad media. RT-05 queda cerrado sin ejecutar la prueba.
 - **H-05 — Wazuh dashboard sin autenticación:** el dashboard abre sin login (plugin de
   seguridad de OpenSearch desactivado). Cualquiera con acceso de red a Gestión ve todas
   las alertas y la configuración del SIEM. Evidencia: `evidencias/RT-06/`. (El mismo hueco
-  se reporta además desde RT-10 como H-22.)
+  también es el objetivo de RT-10 y se cuenta una sola vez.)
 
 ### Respuesta del Blue Team observada (2026-10-28)
 Consulta directa a la base de Keycloak (Postgres `identity-db`) y a la consola:
@@ -464,7 +464,7 @@ en el manager.
 - `evidencias/RT-10/2026-10-27_RT-10_consola-siem.txt`
 
 ### Hallazgo / conclusión
-**H-22 — La consola del SIEM se lee sin autenticación.** Quien llega a la
+**La consola del SIEM se lee sin autenticación — es el mismo hallazgo que H-05, no se cuenta aparte.** Quien llega a la
 VLAN de Gestión ve el inventario de la detección y el historial de alertas,
 incluidos los casos de fuerza bruta y de webshell. Es el mismo hueco que H-05.
 Severidad alta. RT-10 queda cerrado en ese alcance: se llegó a la consola,
@@ -686,6 +686,16 @@ Numeración corrida. La columna *Objetivo* liga cada hallazgo a su objetivo RT (
 análisis AE. El inventario con CVSS y MITRE está en la §4 del
 [informe técnico](informe-red-team.md).
 
+**26 IDs en total** (H-01 a H-27, sin H-22, que se unificó en H-05): **23 contados** por
+severidad (2 críticos, 11 altos, 8 medios, 1 bajo, 1 informativo) y **3 observaciones**
+(H-01, H-02, H-03). De los 26, **25 tienen carpeta de evidencia**; H-25 (transversal) va en
+la §0 de arriba.
+
+> **Nota:** varios hallazgos tocan el **mismo componente** pero son distintos. El dashboard
+> de Wazuh: H-05 (sin autenticación, demostrado) + H-15 y H-26 (dos avisos por versión cuyo
+> efecto ya cubre H-05 en la práctica). Keycloak 26.0: H-16, H-17, H-18 (tres CVE distintos).
+> No son repetidos: cada ID es un aviso o una debilidad diferente.
+
 | ID | Hallazgo | Objetivo | Severidad | Estado |
 |---|---|---|---|---|
 | H-01 | Segmentación bloquea el recon Usuarios→DMZ/Servidores (Suricata ciego a ese escaneo) | RT-01 | Informativa (control) | Confirmado 25/10 |
@@ -711,7 +721,6 @@ análisis AE. El inventario con CVSS y MITRE está en la §4 del
 | H-27 | web-victim sobre Debian Stretch (EOL) con repos APT sin autenticar | AE-02 | Alta | Confirmado, estático |
 | H-20 | Wazo no desplegado; RT-08 no ejecutable | RT-08 | Informativa | Cerrado 27/10 |
 | H-21 | MFA administrativo ausente: no existe el realm `lab` y las consolas no piden segundo factor | RT-09 | Alta | Cerrado 27/10 |
-| H-22 | Consola del SIEM sin autenticación: expone agentes y el historial de alertas (mismo hueco que H-05) | RT-10 | Alta | Cerrado 27/10 |
 | H-23 | No hay regla de DoS; Suricata solo alerta volumen de escaneo hacia su propio alcance | RT-11 | Media | Cerrado 27/10 |
 | H-24 | El repo público trae las contraseñas de arranque (Keycloak, SSH, mail, API de Wazuh) | RT-12 | Alta | Cerrado 28/10 |
 | H-25 | Detección caída tras redespliegue + acoplamiento DVWA↔agente (`set -e`) | Transversal | Media | Documentado |

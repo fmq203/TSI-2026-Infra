@@ -47,7 +47,7 @@ La defensa responde cuando el evento coincide con una regla que ya probaron: la 
 | Severidad cualitativa | Cantidad |
 |---|---|
 | Crítica | 2 |
-| Alta | 12 |
+| Alta | 11 |
 | Media | 8 |
 | Baja | 1 |
 | Informativa | 1 |
@@ -93,7 +93,7 @@ La columna de severidad es cualitativa. La columna **Objetivo** liga el hallazgo
 | H-02 | Firewall | SYN descartado y NULL/FIN con RST | RT-01 | Baja (obs.) | 4.3 | Observado | S | T1046 |
 | H-03 | Suricata / Wazuh | NULL/FIN desde la WAN detectados | RT-01 | — (control) | — | Observado 28/10 | S | T1046 |
 | H-04 | Keycloak | Admin por defecto en `master` | RT-06 | Alta | 8.8 | Confirmado | S | T1078.001 |
-| H-05 | Wazuh dashboard | Sin autenticación | RT-10 | Alta | 6.5 | Confirmado | S | T1078 |
+| H-05 | Wazuh dashboard | Sin autenticación (RT-06 y RT-10) | RT-06 / RT-10 | Alta | 6.5 | Confirmado | S | T1078 |
 | H-06 | Keycloak | Auditoría de Events apagada | RT-06 | Alta | 3.5 | Cerrado 28/10 | S | T1078 |
 | H-07 | Cowrie | Sesión aceptada, regla 100110 en cero | RT-04 | Media | 5.3 | Cerrado 28/10 | S | T1021.004 |
 | H-08 | Suricata / Wazuh | Sin correlación de DNS | RT-05 | Media | 4.3 | Cerrado 28/10 | S | T1048 |
@@ -112,12 +112,13 @@ La columna de severidad es cualitativa. La columna **Objetivo** liga el hallazgo
 | H-27 | web-victim (Debian Stretch) | Base EOL + APT sin autenticar (`trusted=yes`, `--allow-unauthenticated`) | AE-02 | Alta | — | Estático | S | — |
 | H-20 | Wazo | No desplegado | RT-08 | Informativa | — | Cerrado 27/10 | S | — |
 | H-21 | Keycloak | MFA administrativo ausente | RT-09 | Alta | 8.1 | Cerrado 27/10 | S | T1078 |
-| H-22 | Wazuh | Consola del SIEM sin login | RT-10 | Alta | 6.5 | Cerrado 27/10 | S | T1078 |
 | H-23 | Suricata | Sin regla de DoS | RT-11 | Media | 5.3 | Cerrado 27/10 | S | T1499 |
 | H-24 | Repositorio | Contraseñas de arranque públicas | RT-12 | Alta | 7.5 | Cerrado 28/10 | S | T1552 |
 | H-25 | Agentes Wazuh | Detección caída tras un redespliegue | Transversal | Media | 4.4 | Documentado | S | — |
 
-> H-05 y H-22 son el mismo hueco (el dashboard de Wazuh abre sin autenticación), visto desde dos objetivos: RT-06 (uso de credenciales) y RT-10 (consola del SIEM). Se dejan como dos filas porque cada objetivo lo reporta por separado.
+> H-05 es el dashboard de Wazuh sin autenticación. Aparece tanto en RT-06 (uso de credenciales) como en RT-10 (consola del SIEM), pero es **una sola debilidad y se cuenta una vez**. El id H-22, que antes duplicaba este hueco, se retiró (unificado en H-05); por eso la numeración salta de H-21 a H-23.
+>
+> **Nota — tres hallazgos tocan el dashboard de Wazuh, pero son distintos:** **H-05** es el problema real y demostrado (abre **sin autenticación**); **H-15** y **H-26** son **avisos por versión** del mismo componente (4.9.0) — un rol de pocos privilegios podría ver los agentes (H-15) o leer credenciales de enrolamiento (H-26). En la práctica H-05 ya cubre el efecto de ambos (si no hay login, el rol no importa); se listan aparte porque son CVE/avisos **distintos**, no debilidades repetidas. Lo mismo con los CVE de Keycloak (H-16, H-17, H-18): mismo producto, tres avisos diferentes.
 
 ### Vectores
 
@@ -129,7 +130,7 @@ El resto se calculó para este despliegue. Las consolas de Gestión usan vector 
 |---|---|---|
 | H-02 | `AV:A/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N` | Desde Usuarios, la diferencia drop/RST deja ver que hay un filtro con estado. Confidencialidad baja. |
 | H-04 | `AV:A/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H` | `admin` / `changeme` da el realm `master`. La cuenta es pública, así que no se exige privilegio previo. |
-| H-05 y H-22 | `AV:A/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N` | El mismo hueco, dos id. Se leyeron agentes y alertas. No se modificó la configuración, por eso integridad ninguna. El 6.5 es medio y la severidad cualitativa sigue alta: lo que se lee es el SOC. |
+| H-05 | `AV:A/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N` | El dashboard sin autenticación (surge en RT-06 y RT-10). Se leyeron agentes y alertas. No se modificó la configuración, por eso integridad ninguna. El 6.5 es medio y la severidad cualitativa sigue alta: lo que se lee es el SOC. |
 | H-06 | `AV:A/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:N` | La auditoría apagada, sola, no abre datos. Integridad baja del registro. El 3.5 es bajo. La severidad cualitativa sigue alta porque el acceso de H-04 no deja rastro. |
 | H-07 | `AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N` | El 2222 está publicado. La sesión es el honeypot haciendo su trabajo. Lo que se puntúa es que esa acción no queda como alerta. |
 | H-08 | `AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N` | Hueco de detección. No se envió una consulta DNS. Confidencialidad baja: un dato podría salir sin alerta. Hace falta un privilegio bajo en un host interno. |
@@ -159,7 +160,7 @@ El paso a paso y las horas están en `informe-evidencias-redteam.md`. Acá va el
 
 La consola de Keycloak entra con el admin temporal del realm `master`. El `Makefile` copia los `.env.example` a `.env`, y el `README.md` publica esas cuentas. No hay clave privada ni `.env` en el historial de git. La auditoría de ese realm está apagada: `events_enabled` y `admin_events_enabled` en falso, y cero filas en las tablas de eventos (H-06). El login con la cuenta de ejemplo no deja rastro y Keycloak no reenvía esos logs a Wazuh. Recomendación: sacar los valores reales del árbol público, rotar lo que ya se desplegó con el ejemplo, y prender Events.
 
-### H-05, H-21 y H-22 — Consolas sin segundo factor
+### H-05 y H-21 — Consolas sin segundo factor
 
 El realm `lab`, donde el Blue Team documentó TOTP, no existe en esta copia. El selector de realms muestra solo `master`, sin pedido de código. `http://localhost:5601/app/home` abre sin login; desde el menú se ven los agentes y 234 eventos de Threat Hunting, entre ellos fuerza bruta y webshell. Recomendación: exigir MFA en la consola de identidades y volver a poner autenticación delante del dashboard.
 
@@ -194,7 +195,7 @@ Tras un redespliegue, los agentes pueden quedar desenrolados y la app no arranca
 | Discovery | T1046 Network Service Discovery | Parte A: la segmentación contuvo el escaneo y Suricata no lo vio. Parte B: NULL y FIN desde la WAN, detectados (1000002, 1000003, regla 100100). |
 | Credential Access | T1110 Brute Force | RT-02. Wazuh 5763 y `firewall-drop`. Detectado y bloqueado. |
 | Persistence | T1505.003 Web Shell | RT-03. Regla 100200 e `isolate-webapp`. Detectado y aislado. |
-| Initial Access | T1078 Valid Accounts | H-04, H-21, H-22, H-24. Consolas y contraseñas de ejemplo. |
+| Initial Access | T1078 Valid Accounts | H-04, H-05, H-21, H-24. Consolas y contraseñas de ejemplo. |
 | Lateral Movement | T1021.004 SSH | H-07. Sesión aceptada por Cowrie, sin alerta. |
 | Exfiltration | T1048 | H-08. Sin regla. |
 | Defense Evasion | T1562 Impair Defenses | H-09. Reglas públicas y estrechas. |
@@ -230,6 +231,6 @@ En este orden:
 
 - Anexo A — Bitácora: [`bitacora.md`](bitacora.md).
 - Anexo B — Evidencias: `docs-red-team/evidencias/`. Las carpetas siguen los objetivos de la letra **RT-01 a RT-12** y los análisis **AE-01** (estático: Trivy y Semgrep) y **AE-02** (avisos públicos y auditoría de dependencias). RT-01 a RT-03 reúnen las pruebas que antes se documentaron como casos de uso; RT-06 incluye el acceso a identidad (antes CU-04). Índice en [`evidencias/index.md`](evidencias/index.md).
-- Anexo C — Conteo al 31/10: 12 objetivos de la letra, los 12 cerrados. Hallazgos de la sección 4: 2 críticos, 12 altos, 8 medios, 1 bajo, 1 informativo, más H-01, H-02 y H-03, que son observaciones del reconocimiento y no una debilidad explotada. H-06 entra en los altos por la severidad cualitativa; su base es 3.5. H-26 y H-27 se sumaron el 31/10 desde la auditoría de dependencias (AE-02); H-27 no tiene CVSS (riesgo de mantenimiento/cadena de suministro, sin CVE atribuido).
+- Anexo C — Conteo al 03/11: 12 objetivos de la letra, los 12 cerrados. Hallazgos de la sección 4: 2 críticos, 11 altos, 8 medios, 1 bajo, 1 informativo (**23 en total**), más H-01, H-02 y H-03, que son observaciones del reconocimiento y no una debilidad explotada. El dashboard de Wazuh sin autenticación se cuenta una sola vez (H-05); el id H-22, que lo duplicaba, se unificó en H-05 (numeración salta H-22). H-06 entra en los altos por la severidad cualitativa; su base es 3.5. H-26 y H-27 se sumaron el 31/10 desde la auditoría de dependencias (AE-02); H-27 no tiene CVSS (riesgo de mantenimiento/cadena de suministro, sin CVE atribuido).
 
 Queda fuera de este archivo la presentación de 10 minutos del 09/11.

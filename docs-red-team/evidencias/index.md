@@ -60,9 +60,15 @@ técnico), y ese objetivo es la carpeta donde está su evidencia.
 | `RT-07/` | H-09 |
 | `RT-08/` | H-20 |
 | `RT-09/` | H-21 |
-| `RT-10/` | H-22 (mismo hueco que H-05) |
+| `RT-10/` | H-05 (mismo hueco, documentado en RT-06; H-22 se unificó en H-05) |
 | `RT-11/` | H-23 |
 | `RT-12/` | H-24 |
 | `AE-01/` | H-10, H-11, H-12 |
 | `AE-02/` | H-13 a H-19, H-26, H-27 |
 | (sin carpeta: §0 del informe de evidencias) | H-25 (transversal, entorno) |
+
+**Conteo.** 26 IDs de hallazgo en total: H-01 a H-27, **sin H-22** (unificado en H-05). De
+esos, **25 tienen carpeta de evidencia**; el restante, **H-25** (transversal/entorno), está
+documentado en la §0 del informe de evidencias, sin carpeta. Por severidad: **23 contados**
+(2 críticos, 11 altos, 8 medios, 1 bajo, 1 informativo) más **3 observaciones** del
+reconocimiento (H-01, H-02, H-03).

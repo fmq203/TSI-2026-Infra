@@ -39,7 +39,9 @@
   25 y 28/10. RT-02, RT-03, RT-04, RT-05, RT-07 a RT-12: Pablo, 25–28/10.
 - **Análisis:** AE-01 (Trivy 0.76.1 + Semgrep 1.182.1, estático) y AE-02 (avisos públicos
   + auditoría de dependencias). Sin tráfico contra el laboratorio.
-- **Hallazgos:** 2 críticos, 11 altos, 7 medios, 1 bajo, 1 informativo, más 3 observaciones
+- **Hallazgos:** 2 críticos, 11 altos, 8 medios, 1 bajo, 1 informativo = **23 contados**,
+  más 3 observaciones (H-01, H-02, H-03). **26 IDs** en total (H-01 a H-27, sin H-22 que se
+  unificó en H-05); 25 con carpeta de evidencia, H-25 transversal en §0.
   de reconocimiento (H-01, H-02, H-03). Inventario en `informe-red-team.md` §4.
 - **Documentos:** `informe-red-team.md` (v1.1), `informe-evidencias-redteam.md`,
   `evidencias/index.md`, `guion-presentacion.md`. Presentación de 10 min en el deck
