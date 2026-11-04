@@ -6,7 +6,7 @@
 > **Nomenclatura (actualizada 31/10):** el trabajo se organiza en dos ejes —
 > **RT-01 a RT-12**, los objetivos de ataque de la letra, y **AE-01 / AE-02**, los
 > análisis estático y documental que no son objetivos de la letra. Los **hallazgos usan
-> numeración corrida `H-01` a `H-25`**; la columna *Objetivo* de la §4 liga cada hallazgo
+> numeración corrida `H-01` a `H-27`** (salta `H-22`, unificado en `H-05`); la columna *Objetivo* de la §4 liga cada hallazgo
 > a su RT o AE. Este esquema reemplaza los identificadores previos (`H-04.1`, `H-R07.1`,
 > `H-EST-01`, las carpetas `CU-…`), que mezclaban casos de uso del Blue Team con objetivos
 > de la letra. RT-01 Parte B y los Events de Keycloak se toman del informe de evidencias
@@ -222,10 +222,10 @@ En este orden:
 
 1. Poner autenticación y MFA delante del dashboard y de la consola de Keycloak. Importar el realm con TOTP, o dejar de declararlo; activar y centralizar Events para registrar accesos y acciones administrativas.
 2. Sacar las contraseñas de arranque del repositorio público y rotar las que ya se copiaron a `.env`.
-3. Alertar el login aceptado de Cowrie, en un nivel que también mande mail.
+3. Actualizar Wazuh 4.9.0 y Keycloak `26.0`, que concentran los dos hallazgos críticos por versión.
 4. Darle a Suricata visibilidad más allá de `10.10.20.50`, y sumar reglas de DNS y de DoS.
-5. Actualizar Wazuh 4.9.0 y Keycloak `26.0`, que concentran los dos hallazgos críticos por versión.
-6. Dejar de publicar `local_rules.xml` con el campo exacto que cada regla exige.
+5. Alertar el login aceptado de Cowrie, en un nivel que también mande mail.
+6. Dejar de publicar `local_rules.xml` con el campo exacto que cada regla exige, y endurecer los contenedores de los blancos para que no corran como root (H-10).
 
 ## 9. Anexos
 

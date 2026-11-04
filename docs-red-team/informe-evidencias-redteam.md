@@ -3,7 +3,7 @@
 > Documento de trabajo: una sección por **objetivo** (RT-01 a RT-12 de la letra) y por
 > **análisis** (AE-01 estático, AE-02 avisos y dependencias). La evidencia va en
 > `docs-red-team/evidencias/RT-0X/` o `.../AE-0X/`. Los hallazgos usan numeración corrida
-> **`H-01` a `H-25`**; la columna *Objetivo* del inventario (§4 del
+> **`H-01` a `H-27`** (salta `H-22`, unificado en `H-05`); la columna *Objetivo* del inventario (§4 del
 > [informe técnico](informe-red-team.md)) liga cada uno a su RT/AE. Las credenciales que
 > figuran acá son **de laboratorio** (entorno aislado en VirtualBox).
 
